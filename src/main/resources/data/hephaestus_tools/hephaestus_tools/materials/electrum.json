@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:electrum",
+  "ingredient": {
+    "tag": "c:ingots/electrum"
+  },
+  "color": 16771685,
+  "head_stats": {
+    "durability": 225,
+    "mining_speed": 8.0,
+    "attack_damage": 1.5,
+    "attack_speed": 1.0,
+    "tier": 2,
+    "enchantability": 25
+  },
+  "handle_stats": {
+    "durability_mult": -0.35,
+    "speed_mult": 0.15,
+    "damage_mult": 0.0,
+    "attack_speed_mult": 0.15
+  },
+  "binding_stats": {
+    "durability": 45
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "hephaestus_tools:leather",
+  "ingredient": {
+    "item": "minecraft:leather"
+  },
+  "color": 9132587,
+  "head_stats": {},
+  "handle_stats": {},
+  "binding_stats": {}
+}

@@ -1,0 +1,38 @@
+modLoader="javafml"
+loaderVersion="${neoforge_version}"
+license="All rights reserved"
+issueTrackerURL=""
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="Hephaestus Tools"
+description="A modular tool mod for Hephaestus."
+
+[[dependencies.${mod_id}]]
+modId="neoforge"
+type="required"
+versionRange="[${neoforge_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="minecraft"
+type="required"
+versionRange="[${minecraft_version},)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="athena"
+type="required"
+versionRange="[4.0.0,)"
+ordering="AFTER"
+side="CLIENT"
+
+[[dependencies.${mod_id}]]
+modId="alltheores"
+type="optional"
+versionRange="[3.2.0,)"
+ordering="AFTER"
+side="BOTH"

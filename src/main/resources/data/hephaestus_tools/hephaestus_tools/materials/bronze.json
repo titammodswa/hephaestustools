@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:bronze",
+  "ingredient": {
+    "tag": "c:ingots/bronze"
+  },
+  "color": 13932389,
+  "head_stats": {
+    "durability": 760,
+    "mining_speed": 6.5,
+    "attack_damage": 2.25,
+    "attack_speed": 1.0,
+    "tier": 3,
+    "enchantability": 12
+  },
+  "handle_stats": {
+    "durability_mult": 0.1,
+    "speed_mult": 0.05,
+    "damage_mult": 0.0,
+    "attack_speed_mult": 0.0
+  },
+  "binding_stats": {
+    "durability": 150
+  }
+}

@@ -1,0 +1,39 @@
+package com.titammods.hephaestus_tools.tables.screen;
+
+import com.titammods.hephaestus_tools.HephaestusTools;
+import com.titammods.hephaestus_tools.tables.menu.PartBuilderMenu;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+
+public class PartBuilderScreen extends AbstractContainerScreen<PartBuilderMenu> {
+
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
+            HephaestusTools.MOD_ID, "textures/gui/part_builder.png");
+
+    public PartBuilderScreen(PartBuilderMenu menu, Inventory playerInv, Component title) {
+        super(menu, playerInv, title);
+        this.imageWidth  = 176;
+        this.imageHeight = 166;
+        this.inventoryLabelY = 72;
+    }
+
+    @Override
+    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+        graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight);
+    }
+
+    @Override
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        super.render(graphics, mouseX, mouseY, partialTick);
+        renderTooltip(graphics, mouseX, mouseY);
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+        graphics.drawString(font, title, titleLabelX, titleLabelY, 0x404040, false);
+        graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
+    }
+}

@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "hephaestus_tools:item/tool/sledge_hammer/head",
+    "layer1": "hephaestus_tools:item/tool/sledge_hammer/front",
+    "layer2": "hephaestus_tools:item/tool/sledge_hammer/back",
+    "layer3": "hephaestus_tools:item/tool/sledge_hammer/handle"
+  }
+}

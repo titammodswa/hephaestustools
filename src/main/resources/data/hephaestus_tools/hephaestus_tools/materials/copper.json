@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:copper",
+  "ingredient": {
+    "item": "minecraft:copper_ingot"
+  },
+  "color": 15170646,
+  "head_stats": {
+    "durability": 210,
+    "mining_speed": 5.0,
+    "attack_damage": 0.5,
+    "attack_speed": 1.0,
+    "tier": 2,
+    "enchantability": 14
+  },
+  "handle_stats": {
+    "durability_mult": -0.2,
+    "speed_mult": 0.1,
+    "damage_mult": 0.05,
+    "attack_speed_mult": 0.0
+  },
+  "binding_stats": {
+    "durability": 60
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:cobalt",
+  "ingredient": {
+    "tag": "c:ingots/cobalt"
+  },
+  "color": 2646232,
+  "head_stats": {
+    "durability": 800,
+    "mining_speed": 6.5,
+    "attack_damage": 2.25,
+    "attack_speed": 1.0,
+    "tier": 3,
+    "enchantability": 18
+  },
+  "handle_stats": {
+    "durability_mult": 0.05,
+    "speed_mult": 0.05,
+    "damage_mult": 0.0,
+    "attack_speed_mult": 0.05
+  },
+  "binding_stats": {
+    "durability": 150
+  }
+}

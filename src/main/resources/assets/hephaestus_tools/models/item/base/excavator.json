@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "hephaestus_tools:item/tool/excavator/head",
+    "layer1": "hephaestus_tools:item/tool/excavator/grip",
+    "layer2": "hephaestus_tools:item/tool/excavator/handle",
+    "layer3": "hephaestus_tools:item/tool/excavator/binding"
+  }
+}

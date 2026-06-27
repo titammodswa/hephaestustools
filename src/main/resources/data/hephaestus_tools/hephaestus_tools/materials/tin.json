@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:tin",
+  "ingredient": {
+    "tag": "c:ingots/tin"
+  },
+  "color": 9020852,
+  "head_stats": {
+    "durability": 192,
+    "mining_speed": 5.0,
+    "attack_damage": 1.5,
+    "attack_speed": 1.0,
+    "tier": 1,
+    "enchantability": 12
+  },
+  "handle_stats": {
+    "durability_mult": 0.0,
+    "speed_mult": 0.0,
+    "damage_mult": 0.0,
+    "attack_speed_mult": 0.2
+  },
+  "binding_stats": {
+    "durability": 40
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:bone",
+  "ingredient": {
+    "item": "minecraft:bone"
+  },
+  "color": 15263186,
+  "head_stats": {
+    "durability": 100,
+    "mining_speed": 2.5,
+    "attack_damage": 1.25,
+    "attack_speed": 1.0,
+    "tier": 1,
+    "enchantability": 12
+  },
+  "handle_stats": {
+    "durability_mult": -0.25,
+    "speed_mult": 0.0,
+    "damage_mult": 0.0,
+    "attack_speed_mult": 0.1
+  },
+  "binding_stats": {
+    "durability": 45
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "hephaestus_tools:item/tool/kama/head",
+    "layer1": "hephaestus_tools:item/tool/pickaxe/handle",
+    "layer2": "hephaestus_tools:item/tool/kama/binding"
+  }
+}

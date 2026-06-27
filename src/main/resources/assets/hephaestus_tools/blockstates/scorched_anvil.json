@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "hephaestus_tools:block/scorched_anvil" },
+    "facing=south": { "model": "hephaestus_tools:block/scorched_anvil", "y": 180 },
+    "facing=west":  { "model": "hephaestus_tools:block/scorched_anvil", "y": 270 },
+    "facing=east":  { "model": "hephaestus_tools:block/scorched_anvil", "y": 90 }
+  }
+}

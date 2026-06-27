@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:wood",
+  "ingredient": {
+    "tag": "minecraft:planks"
+  },
+  "color": 8806467,
+  "head_stats": {
+    "durability": 60,
+    "mining_speed": 2.0,
+    "attack_damage": 0.0,
+    "attack_speed": 1.0,
+    "tier": 0,
+    "enchantability": 15
+  },
+  "handle_stats": {
+    "durability_mult": 0.0,
+    "speed_mult": 0.0,
+    "damage_mult": 0.0,
+    "attack_speed_mult": 0.0
+  },
+  "binding_stats": {
+    "durability": 25
+  }
+}

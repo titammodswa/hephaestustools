@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:lumium",
+  "ingredient": {
+    "tag": "c:ingots/lumium"
+  },
+  "color": 16766857,
+  "head_stats": {
+    "durability": 920,
+    "mining_speed": 15.0,
+    "attack_damage": 4.0,
+    "attack_speed": 1.0,
+    "tier": 3,
+    "enchantability": 14
+  },
+  "handle_stats": {
+    "durability_mult": 0.0,
+    "speed_mult": 0.2,
+    "damage_mult": 0.0,
+    "attack_speed_mult": 0.0
+  },
+  "binding_stats": {
+    "durability": 185
+  }
+}

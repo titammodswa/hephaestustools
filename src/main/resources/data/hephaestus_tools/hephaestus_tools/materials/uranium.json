@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:uranium",
+  "ingredient": {
+    "tag": "c:ingots/uranium"
+  },
+  "color": 2227983,
+  "head_stats": {
+    "durability": 800,
+    "mining_speed": 6.0,
+    "attack_damage": 2.0,
+    "attack_speed": 1.0,
+    "tier": 3,
+    "enchantability": 17
+  },
+  "handle_stats": {
+    "durability_mult": 0.0,
+    "speed_mult": 0.1,
+    "damage_mult": 0.0,
+    "attack_speed_mult": 0.0
+  },
+  "binding_stats": {
+    "durability": 160
+  }
+}

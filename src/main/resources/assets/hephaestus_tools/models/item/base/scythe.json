@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "hephaestus_tools:item/tool/scythe/head",
+    "layer1": "hephaestus_tools:item/tool/scythe/accessory",
+    "layer2": "hephaestus_tools:item/tool/scythe/handle",
+    "layer3": "hephaestus_tools:item/tool/scythe/binding"
+  }
+}

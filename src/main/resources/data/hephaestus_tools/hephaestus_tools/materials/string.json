@@ -1,0 +1,10 @@
+{
+  "id": "hephaestus_tools:string",
+  "ingredient": {
+    "item": "minecraft:string"
+  },
+  "color": 16777215,
+  "head_stats": {},
+  "handle_stats": {},
+  "binding_stats": {}
+}

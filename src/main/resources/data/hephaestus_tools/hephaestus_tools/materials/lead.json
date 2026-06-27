@@ -1,0 +1,24 @@
+{
+  "id": "hephaestus_tools:lead",
+  "ingredient": {
+    "tag": "c:ingots/lead"
+  },
+  "color": 6907257,
+  "head_stats": {
+    "durability": 200,
+    "mining_speed": 6.5,
+    "attack_damage": 1.75,
+    "attack_speed": 1.0,
+    "tier": 2,
+    "enchantability": 15
+  },
+  "handle_stats": {
+    "durability_mult": -0.1,
+    "speed_mult": 0.1,
+    "damage_mult": 0.1,
+    "attack_speed_mult": -0.1
+  },
+  "binding_stats": {
+    "durability": 40
+  }
+}
