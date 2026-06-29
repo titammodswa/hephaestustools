@@ -83,7 +83,7 @@
   "tooltip.hephaestus_tools.fortune": "Fortune: %s",
   "tooltip.hephaestus_tools.looting": "Looting: %s",
   "tooltip.hephaestus_tools.indestructible": "Indestructible",
-  "tooltip.hephaestus_tools.hold_shift": "Hold Shift for details",
+  "tooltip.hephaestus_tools.hold_shift": "Hold %s for stats",
   "tooltip.hephaestus_tools.tier.wood": "Wood",
   "tooltip.hephaestus_tools.tier.stone": "Stone",
   "tooltip.hephaestus_tools.tier.iron": "Iron",
@@ -120,5 +120,16 @@
   "material.hephaestus_tools.uranium": "Uranium",
   "material.hephaestus_tools.zinc": "Zinc",
   "item.hephaestus_tools.large_plate": "Large Plate",
-  "item.hephaestus_tools.adze_head": "Adze Head"
+  "item.hephaestus_tools.adze_head": "Adze Head",
+  "tool_stat.hephaestus_tools.durability": "Durability: ",
+  "tool_stat.hephaestus_tools.attack_damage": "Melee Damage: ",
+  "tool_stat.hephaestus_tools.attack_speed": "Melee Speed: ",
+  "tool_stat.hephaestus_tools.mining_speed": "Mining Speed: ",
+  "tool_stat.hephaestus_tools.harvest_tier": "Mining Tier: ",
+  "tool_stat.hephaestus_tools.enchantability": "Enchantability: ",
+  "tool_stat.hephaestus_tools.fortune": "Fortune: ",
+  "tool_stat.hephaestus_tools.looting": "Looting: ",
+  "tooltip.hephaestus_tools.hold_ctrl": "Hold %s for more",
+  "key.hephaestus_tools.shift": "Shift",
+  "key.hephaestus_tools.ctrl": "Ctrl"
 }

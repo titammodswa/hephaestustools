@@ -56,7 +56,7 @@
   "tooltip.hephaestus_tools.fortune": "Fortuna: %s",
   "tooltip.hephaestus_tools.looting": "Pilhagem: %s",
   "tooltip.hephaestus_tools.indestructible": "Indestrutível",
-  "tooltip.hephaestus_tools.hold_shift": "Segure Shift para detalhes",
+  "tooltip.hephaestus_tools.hold_shift": "Segure %s para status",
   "tooltip.hephaestus_tools.tier.wood": "Madeira",
   "tooltip.hephaestus_tools.tier.stone": "Pedra",
   "tooltip.hephaestus_tools.tier.iron": "Ferro",
@@ -93,5 +93,16 @@
   "material.hephaestus_tools.uranium": "Urânio",
   "material.hephaestus_tools.zinc": "Zinco",
   "item.hephaestus_tools.large_plate": "Placa Grande",
-  "item.hephaestus_tools.adze_head": "Cabeça de Enxó"
+  "item.hephaestus_tools.adze_head": "Cabeça de Enxó",
+  "tool_stat.hephaestus_tools.durability": "Durabilidade: ",
+  "tool_stat.hephaestus_tools.attack_damage": "Dano Corpo a Corpo: ",
+  "tool_stat.hephaestus_tools.attack_speed": "Velocidade de Ataque: ",
+  "tool_stat.hephaestus_tools.mining_speed": "Velocidade de Mineração: ",
+  "tool_stat.hephaestus_tools.harvest_tier": "Nível de Mineração: ",
+  "tool_stat.hephaestus_tools.enchantability": "Encantabilidade: ",
+  "tool_stat.hephaestus_tools.fortune": "Fortuna: ",
+  "tool_stat.hephaestus_tools.looting": "Pilhagem: ",
+  "tooltip.hephaestus_tools.hold_ctrl": "Segure %s para mais",
+  "key.hephaestus_tools.shift": "Shift",
+  "key.hephaestus_tools.ctrl": "Ctrl"
 }

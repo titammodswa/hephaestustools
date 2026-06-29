@@ -1,8 +1,8 @@
 {
   "variants": {
-    "facing=north": { "model": "hephaestus_tools:block/tinkers_anvil" },
-    "facing=south": { "model": "hephaestus_tools:block/tinkers_anvil", "y": 180 },
-    "facing=west":  { "model": "hephaestus_tools:block/tinkers_anvil", "y": 270 },
-    "facing=east":  { "model": "hephaestus_tools:block/tinkers_anvil", "y": 90 }
+    "facing=north": { "model": "hephaestus_tools:block/tinkers_anvil", "y": 90 },
+    "facing=south": { "model": "hephaestus_tools:block/tinkers_anvil", "y": 270 },
+    "facing=west":  { "model": "hephaestus_tools:block/tinkers_anvil" },
+    "facing=east":  { "model": "hephaestus_tools:block/tinkers_anvil", "y": 180 }
   }
 }

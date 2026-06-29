@@ -101,28 +101,9 @@ public abstract class ModifiableItem extends Item {
 
     @Override
     public float getDestroySpeed(ItemStack stack, BlockState state) {
-        boolean init = ToolStack.isInitialized(stack);
-        boolean broken = ToolStack.isBroken(stack);
-        boolean tagMatch = state.is(getToolBlockTag());
-        boolean hasPropsComponent = stack.get(
-                com.titammods.hephaestus_tools.registry.ModComponents.TOOL_PROPERTIES.get()) != null;
-        float miningStat = init ? ToolStack.getMiningSpeed(stack) : -1f;
-        boolean correct = init && !broken && tagMatch
-                && hasCorrectTier(state, ToolStack.getProperties(stack).getHarvestTier());
-
-        float result;
-        if (!init) result = 1.0f;
-        else if (broken) result = 0.3f;
-        else result = tagMatch ? miningStat : 1.0f;
-
-        long now = System.currentTimeMillis();
-        if (now - lastMineLog > 400L) {
-            lastMineLog = now;
-            LOGGER.info("[HephTools mine] block={} init={} broken={} tagMatch={} hasPropsComp={} miningSpeedStat={} correctForDrops={} -> destroySpeed={}",
-                    net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()),
-                    init, broken, tagMatch, hasPropsComponent, miningStat, correct, result);
-        }
-        return result;
+        if (!ToolStack.isInitialized(stack)) return 1.0f;
+        if (ToolStack.isBroken(stack)) return 0.3f;
+        return state.is(getToolBlockTag()) ? ToolStack.getMiningSpeed(stack) : 1.0f;
     }
 
     @Override
@@ -168,25 +149,18 @@ public abstract class ModifiableItem extends Item {
             return;
         }
 
-        boolean detailed = net.minecraft.client.gui.screens.Screen.hasShiftDown();
-
-        if (ToolStack.isBroken(stack)) {
-            tooltip.add(Component.translatable("tooltip.hephaestus_tools.broken")
-                    .withStyle(net.minecraft.ChatFormatting.RED));
-        }
-
-        tooltip.addAll(com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder.stats(stack, detailed));
-
-        List<Component> mods =
-                com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder.modifiers(stack, detailed);
-        if (!mods.isEmpty()) {
-            tooltip.add(Component.empty());
-            tooltip.addAll(mods);
-        }
-
-        if (!detailed) {
-            tooltip.add(Component.translatable("tooltip.hephaestus_tools.hold_shift")
-                    .withStyle(net.minecraft.ChatFormatting.DARK_GRAY, net.minecraft.ChatFormatting.ITALIC));
+        if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
+            tooltip.addAll(com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder.stats(stack, true));
+            List<Component> mods =
+                    com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder.modifiers(stack, true);
+            if (!mods.isEmpty()) {
+                tooltip.add(Component.empty());
+                tooltip.addAll(mods);
+            }
+        } else if (net.minecraft.client.gui.screens.Screen.hasControlDown()) {
+            tooltip.addAll(com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder.components(stack, this));
+        } else {
+            tooltip.addAll(com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder.defaultInfo(stack));
         }
     }
 

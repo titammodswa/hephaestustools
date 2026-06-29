@@ -4,7 +4,7 @@
     "particle": "hephaestus_tools:block/table/scorched_anvil_base",
     "base":     "hephaestus_tools:block/table/scorched_anvil_base",
     "upper":    "hephaestus_tools:block/table/scorched_anvil_base_upper",
-    "top":      "hephaestus_tools:block/table/scorched_anvil_base_upper"
+    "top":      "hephaestus_tools:block/table/scorched_anvil_top"
   },
   "elements": [
     { "from": [ 2, 0, 2 ], "to": [ 14, 4, 14 ],
