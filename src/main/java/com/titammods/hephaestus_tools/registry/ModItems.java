@@ -64,6 +64,12 @@ public class ModItems {
     public static final DeferredItem<ToolPartItem> SMALL_AXE_HEAD =
             ITEMS.register("small_axe_head", () -> new ToolPartItem(new Item.Properties(), 0));
 
+    public static final DeferredItem<ToolPartItem> ADZE_HEAD =
+            ITEMS.register("adze_head", () -> new ToolPartItem(new Item.Properties(), 0));
+
+    public static final DeferredItem<ToolPartItem> LARGE_PLATE =
+            ITEMS.register("large_plate", () -> new ToolPartItem(new Item.Properties(), 0));
+
     public static final DeferredItem<ToolPartItem> BROAD_AXE_HEAD =
             ITEMS.register("broad_axe_head", () -> new ToolPartItem(new Item.Properties(), 0));
 

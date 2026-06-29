@@ -79,8 +79,8 @@ public final class ToolLayouts {
             List.of(
                     in(44, 29, ModItems.HAMMER_HEAD.get(),   HAMMER_HEAD),
                     in(21, 52, ModItems.TOUGH_HANDLE.get(),  TOUGH_HANDLE),
-                    in(50, 48, ModItems.TOUGH_BINDING.get(), LARGE_PLATE),
-                    in(25, 20, ModItems.TOUGH_HANDLE.get(),  LARGE_PLATE)
+                    in(50, 48, ModItems.LARGE_PLATE.get(),   LARGE_PLATE),
+                    in(25, 20, ModItems.LARGE_PLATE.get(),   LARGE_PLATE)
             ));
 
     public static final ToolLayout VEIN_HAMMER = make("vein_hammer", ModItems.VEIN_HAMMER.get(), HIDDEN,
@@ -95,7 +95,7 @@ public final class ToolLayouts {
             List.of(
                     in(31, 22, ModItems.SMALL_AXE_HEAD.get(), SMALL_AXE_HEAD),
                     in(22, 53, ModItems.TOOL_HANDLE.get(),    TOOL_HANDLE),
-                    in(51, 34, ModItems.SMALL_AXE_HEAD.get(), ADZE_HEAD)
+                    in(51, 34, ModItems.ADZE_HEAD.get(),      ADZE_HEAD)
             ));
 
     public static final ToolLayout EXCAVATOR = make("excavator", ModItems.EXCAVATOR.get(), HIDDEN,

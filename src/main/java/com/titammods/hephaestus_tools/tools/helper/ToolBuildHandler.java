@@ -64,41 +64,62 @@ public final class ToolBuildHandler {
 
         ToolPropertiesData.Builder builder = ToolPropertiesData.builder();
 
-        MaterialId headId = materials.isEmpty() ? MaterialId.EMPTY : materials.get(0);
-        MaterialStats headStats = MaterialManager.getInstance().getStats(headId);
+        MaterialManager mm = MaterialManager.getInstance();
+        List<net.minecraft.world.item.Item> layoutParts = getToolParts(stack.getItem());
 
-        float baseDurability = headStats.durability();
-        float baseMiningSpeed = headStats.miningSpeed();
-        float baseAttackDamage = headStats.attackDamage();
-        float baseAttackSpeed = headStats.attackSpeed();
-        Tiers harvestTier = headStats.tier();
-        int baseEnchantability = headStats.enchantability();
+        List<MaterialStats> headParts = new ArrayList<>();
+        List<MaterialStats> handleParts = new ArrayList<>();
+        List<MaterialStats> bindingParts = new ArrayList<>();
+        for (int i = 0; i < materials.size(); i++) {
+            int role;
+            if (i < layoutParts.size()
+                    && layoutParts.get(i) instanceof com.titammods.hephaestus_tools.tools.part.ToolPartItem tp) {
+                role = tp.getPartSlot();
+            } else {
+                role = (i == 0) ? 0 : (i == 1) ? 1 : (i == 2) ? 2 : 1;
+            }
+            MaterialId id = materials.get(i);
+            switch (role) {
+                case 0 -> headParts.add(mm.getStatsForSlot(id, 0));
+                case 2 -> bindingParts.add(mm.getStatsForSlot(id, 2));
+                default -> handleParts.add(mm.getStatsForSlot(id, 1));
+            }
+        }
+        if (headParts.isEmpty()) headParts.add(mm.getStats(materials.get(0)));
+
+        float baseDurability = 0, baseMiningSpeed = 0, baseAttackDamage = 0, baseAttackSpeed = 0;
+        int enchAccum = 0;
+        for (MaterialStats hs : headParts) {
+            baseDurability += hs.durability();
+            baseMiningSpeed += hs.miningSpeed();
+            baseAttackDamage += hs.attackDamage();
+            baseAttackSpeed += hs.attackSpeed();
+            enchAccum += hs.enchantability();
+        }
+        int hc = headParts.size();
+        baseDurability /= hc;
+        baseMiningSpeed /= hc;
+        baseAttackDamage /= hc;
+        baseAttackSpeed /= hc;
+        Tiers harvestTier = headParts.get(0).tier();
+        int baseEnchantability = Math.round(enchAccum / (float) hc);
 
         float durabilityMult = 1.0f;
         float speedMult = 1.0f;
         float damageMult = 1.0f;
         float attackSpeedMult = 1.0f;
-
-        if (materials.size() > 1) {
-            MaterialId handleId = materials.get(1);
-            MaterialStats handleStats = MaterialManager.getInstance().getStatsForSlot(handleId, 1);
-            durabilityMult += handleStats.durabilityMult();
-            speedMult += handleStats.speedMult();
-            damageMult += handleStats.damageMult();
-            attackSpeedMult += handleStats.attackSpeedMult();
+        for (int h = 0; h < handleParts.size(); h++) {
+            MaterialStats hs = handleParts.get(h);
+            float w = (h == 0) ? 1.0f : 0.5f;
+            durabilityMult += hs.durabilityMult() * w;
+            speedMult += hs.speedMult() * w;
+            damageMult += hs.damageMult() * w;
+            attackSpeedMult += hs.attackSpeedMult() * w;
         }
 
         float bindingDurabilityBonus = 0f;
-        if (materials.size() > 2) {
-            MaterialId bindingId = materials.get(2);
-            MaterialStats bindingStats = MaterialManager.getInstance().getStatsForSlot(bindingId, 2);
-            bindingDurabilityBonus = bindingStats.durability();
-        }
-
-        if (materials.size() > 3) {
-            MaterialId toughHandleId = materials.get(3);
-            MaterialStats toughHandleStats = MaterialManager.getInstance().getStatsForSlot(toughHandleId, 1);
-            durabilityMult += toughHandleStats.durabilityMult() * 0.5f;
+        for (MaterialStats bs : bindingParts) {
+            bindingDurabilityBonus += bs.durability();
         }
 
         int finalDurability = Math.max(1, (int)((baseDurability + bindingDurabilityBonus) * durabilityMult));

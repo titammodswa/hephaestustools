@@ -91,5 +91,7 @@
   "material.hephaestus_tools.signalum": "Signalum",
   "material.hephaestus_tools.tin": "Estanho",
   "material.hephaestus_tools.uranium": "Urânio",
-  "material.hephaestus_tools.zinc": "Zinco"
+  "material.hephaestus_tools.zinc": "Zinco",
+  "item.hephaestus_tools.large_plate": "Placa Grande",
+  "item.hephaestus_tools.adze_head": "Cabeça de Enxó"
 }

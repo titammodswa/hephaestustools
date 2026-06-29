@@ -37,7 +37,8 @@ public class ClientModEvents {
         event.register(ToolColorHandler.INSTANCE, TOOLS.get());
         event.register(PartColorHandler.INSTANCE,
                 ModItems.PICK_HEAD.get(), ModItems.HAMMER_HEAD.get(), ModItems.SMALL_AXE_HEAD.get(),
-                ModItems.BROAD_AXE_HEAD.get(), ModItems.SMALL_BLADE.get(), ModItems.LARGE_BLADE.get(),
+                ModItems.BROAD_AXE_HEAD.get(), ModItems.ADZE_HEAD.get(), ModItems.LARGE_PLATE.get(),
+                ModItems.SMALL_BLADE.get(), ModItems.LARGE_BLADE.get(),
                 ModItems.TOOL_HANDLE.get(), ModItems.TOUGH_HANDLE.get(),
                 ModItems.TOOL_BINDING.get(), ModItems.TOUGH_BINDING.get());
     }

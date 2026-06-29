@@ -118,5 +118,7 @@
   "material.hephaestus_tools.signalum": "Signalum",
   "material.hephaestus_tools.tin": "Tin",
   "material.hephaestus_tools.uranium": "Uranium",
-  "material.hephaestus_tools.zinc": "Zinc"
+  "material.hephaestus_tools.zinc": "Zinc",
+  "item.hephaestus_tools.large_plate": "Large Plate",
+  "item.hephaestus_tools.adze_head": "Adze Head"
 }
