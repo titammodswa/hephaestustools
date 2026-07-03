@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.titammods.hephaestus_tools.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "hephaestus_tools.refmap.json",
+  "mixins": [
+    "TableBlockEntityMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

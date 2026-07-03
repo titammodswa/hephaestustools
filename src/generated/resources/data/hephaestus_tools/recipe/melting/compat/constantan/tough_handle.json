@@ -1,0 +1,36 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:or",
+      "values": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "alltheores"
+        },
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "ftbmaterials"
+        }
+      ]
+    }
+  ],
+  "type": "hephaestus:melting",
+  "fuel": {
+    "amount": 50,
+    "id": "hephaestus:molten_blaze"
+  },
+  "ingredient": {
+    "type": "neoforge:components",
+    "components": {
+      "hephaestus_tools:part_material": "hephaestus_tools:constantan"
+    },
+    "items": "hephaestus_tools:tough_handle",
+    "strict": false
+  },
+  "result": {
+    "amount": 270,
+    "id": "hephaestus:molten_constantan"
+  },
+  "temperature": 1220,
+  "time": 140
+}

@@ -10,7 +10,8 @@
     "attack_damage": 1.75,
     "attack_speed": 1.0,
     "tier": 2,
-    "enchantability": 15
+    "enchantability": 15,
+    "trait": "heavy"
   },
   "handle_stats": {
     "durability_mult": -0.1,

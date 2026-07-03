@@ -36,3 +36,13 @@ type="optional"
 versionRange="[3.2.0,)"
 ordering="AFTER"
 side="BOTH"
+
+[[dependencies.${mod_id}]]
+modId="hephaestus"
+type="required"
+versionRange="[1.0.0,)"
+ordering="AFTER"
+side="BOTH"
+
+[[mixins]]
+config="hephaestus_tools.mixins.json"

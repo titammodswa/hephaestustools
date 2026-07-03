@@ -77,6 +77,12 @@ public abstract class ModifiableItem extends Item {
         return ToolStack.isInitialized(stack) && !ToolStack.isBroken(stack);
     }
 
+    public float getAttackDamageBonus() { return 0f; }
+
+    public float getAttackDamageMultiplier() { return 1.0f; }
+
+    public float getBaseAttackSpeed() { return -1f; }
+
     @Override
     public ItemAttributeModifiers getDefaultAttributeModifiers(ItemStack stack) {
         if (!ToolStack.isInitialized(stack)) {
@@ -149,6 +155,8 @@ public abstract class ModifiableItem extends Item {
             return;
         }
 
+        appendTrait(stack, tooltip);
+
         if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
             tooltip.addAll(com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder.stats(stack, true));
             List<Component> mods =
@@ -207,6 +215,16 @@ public abstract class ModifiableItem extends Item {
         ResourceLocation rl = id.id();
         String key = "material." + rl.getNamespace() + "." + rl.getPath();
         return Component.translatable(key);
+    }
+
+    private static void appendTrait(ItemStack stack, List<Component> tooltip) {
+        java.util.List<com.titammods.hephaestus_tools.materials.MaterialId> mats = ToolStack.getMaterials(stack);
+        if (mats.isEmpty()) return;
+        com.titammods.hephaestus_tools.materials.MaterialStats hs =
+                com.titammods.hephaestus_tools.materials.MaterialManager.getInstance().getStatsForSlot(mats.get(0), 0);
+        if (hs == null || !hs.hasTrait()) return;
+        tooltip.add(Component.translatable("trait.hephaestus_tools." + hs.traitId())
+                .withStyle(net.minecraft.ChatFormatting.DARK_AQUA));
     }
 
 

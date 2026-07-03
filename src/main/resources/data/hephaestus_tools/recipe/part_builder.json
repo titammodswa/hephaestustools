@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "pp",
+    "ww"
+  ],
+  "key": {
+    "p": { "item": "hephaestus_tools:pattern" },
+    "w": { "tag": "minecraft:planks" }
+  },
+  "result": { "id": "hephaestus_tools:part_builder", "count": 1 }
+}

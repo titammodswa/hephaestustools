@@ -127,9 +127,26 @@ public final class ToolBuildHandler {
         float finalAttackDamage = Math.max(0f, baseAttackDamage * damageMult);
         float finalAttackSpeed = Math.max(0f, baseAttackSpeed * attackSpeedMult);
 
+        if (stack.getItem() instanceof com.titammods.hephaestus_tools.tools.item.ModifiableItem mi) {
+            finalAttackDamage = Math.max(0f,
+                    (baseAttackDamage + mi.getAttackDamageBonus()) * damageMult * mi.getAttackDamageMultiplier());
+            float speedOverride = mi.getBaseAttackSpeed();
+            if (speedOverride >= 0f) finalAttackSpeed = speedOverride;
+        }
+
         ModifierStatContext ctx = new ModifierStatContext(
                 finalDurability, finalMiningSpeed, finalAttackDamage,
                 finalAttackSpeed, baseEnchantability, harvestTier);
+
+        if (!construction.materials().isEmpty()) {
+            var headMat = construction.materials().get(0);
+            var headStats = com.titammods.hephaestus_tools.materials.MaterialManager
+                    .getInstance().getStatsForSlot(headMat, 0);
+            if (headStats != null && headStats.hasTrait()) {
+                com.titammods.hephaestus_tools.materials.trait.MaterialTrait
+                        .byId(headStats.traitId()).ifPresent(t -> t.applyStats(ctx));
+            }
+        }
 
         List<String> activeTraits = new ArrayList<>();
         for (ToolConstructionData.ModifierEntry modEntry : construction.modifiers()) {

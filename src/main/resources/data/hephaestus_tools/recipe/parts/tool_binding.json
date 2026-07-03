@@ -1,0 +1,6 @@
+{
+  "type": "hephaestus_tools:part_builder",
+  "result_part": "hephaestus_tools:tool_binding",
+  "pattern": "hephaestus_tools:pattern",
+  "material_cost": 1
+}

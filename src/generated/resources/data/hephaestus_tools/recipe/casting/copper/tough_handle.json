@@ -1,0 +1,14 @@
+{
+  "type": "hephaestus:casting_table",
+  "cast": {
+    "item": "hephaestus_tools:tough_handle_cast"
+  },
+  "cast_consumed": false,
+  "cooling_time": 140,
+  "count": 1,
+  "fluid": {
+    "amount": 270,
+    "id": "hephaestus:molten_copper"
+  },
+  "result": "hephaestus_tools:tough_handle"
+}

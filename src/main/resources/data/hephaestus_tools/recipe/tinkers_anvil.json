@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "mmm",
+    " s ",
+    "sss"
+  ],
+  "key": {
+    "m": { "tag": "c:storage_blocks/iron" },
+    "s": { "item": "hephaestus:seared_bricks" }
+  },
+  "result": { "id": "hephaestus_tools:tinkers_anvil", "count": 1 }
+}

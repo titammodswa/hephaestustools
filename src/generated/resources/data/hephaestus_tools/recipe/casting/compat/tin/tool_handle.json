@@ -1,0 +1,29 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:or",
+      "values": [
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "alltheores"
+        },
+        {
+          "type": "neoforge:mod_loaded",
+          "modid": "ftbmaterials"
+        }
+      ]
+    }
+  ],
+  "type": "hephaestus:casting_table",
+  "cast": {
+    "item": "hephaestus_tools:tool_handle_cast"
+  },
+  "cast_consumed": false,
+  "cooling_time": 100,
+  "count": 1,
+  "fluid": {
+    "amount": 90,
+    "id": "hephaestus:molten_tin"
+  },
+  "result": "hephaestus_tools:tool_handle"
+}

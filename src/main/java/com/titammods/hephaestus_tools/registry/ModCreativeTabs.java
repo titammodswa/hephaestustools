@@ -72,8 +72,8 @@ public class ModCreativeTabs {
                                 }
                             }
                         }
-                        output.accept(ModItems.REPAIR_KIT.get());
                         output.accept(ModItems.PATTERN.get());
+                        for (var cast : ModItems.CASTS) output.accept(cast.get());
                         output.accept(ModBlocks.TINKERS_ANVIL.get());
                         output.accept(ModBlocks.SCORCHED_ANVIL.get());
                         output.accept(ModBlocks.PART_BUILDER.get());

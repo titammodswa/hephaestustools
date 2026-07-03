@@ -77,13 +77,21 @@ public final class ToolItems {
 
     public static class DaggerItem extends ModifiableSwordItem {
         public DaggerItem(Properties props) { super(props); }
+        @Override public float getAttackDamageBonus() { return 3.0f; }
+        @Override public float getAttackDamageMultiplier() { return 0.65f; }
+        @Override public float getBaseAttackSpeed() { return 2.0f; }
     }
 
     public static class SwordItem extends ModifiableSwordItem {
         public SwordItem(Properties props) { super(props); }
+        @Override public float getAttackDamageBonus() { return 3.0f; }
+        @Override public float getBaseAttackSpeed() { return 1.6f; }
     }
 
     public static class CleaverItem extends ModifiableSwordItem {
         public CleaverItem(Properties props) { super(props); }
+        @Override public float getAttackDamageBonus() { return 3.0f; }
+        @Override public float getAttackDamageMultiplier() { return 1.5f; }
+        @Override public float getBaseAttackSpeed() { return 1.0f; }
     }
 }

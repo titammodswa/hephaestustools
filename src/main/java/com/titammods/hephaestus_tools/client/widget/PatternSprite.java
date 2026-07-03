@@ -39,7 +39,6 @@ public final class PatternSprite {
         UV.put("adze_head",       new int[]{144, 232});
         UV.put("large_plate",     new int[]{160, 232});
         UV.put("broad_blade",     new int[]{176, 232});
-        UV.put("repair_kit",      new int[]{192, 232});
         UV.put("pickaxe",         new int[]{208, 232});
     }
 

@@ -91,9 +91,36 @@ public class ModItems {
     public static final DeferredItem<ToolPartItem> TOUGH_BINDING =
             ITEMS.register("tough_binding", () -> new ToolPartItem(new Item.Properties(), 2));
 
-    public static final DeferredItem<Item> REPAIR_KIT =
-            ITEMS.register("repair_kit", () -> new Item(new Item.Properties()));
-
     public static final DeferredItem<Item> PATTERN =
             ITEMS.register("pattern", () -> new Item(new Item.Properties().stacksTo(64)));
+
+    public static final DeferredItem<Item> PICK_HEAD_CAST =
+            ITEMS.register("pick_head_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> HAMMER_HEAD_CAST =
+            ITEMS.register("hammer_head_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> SMALL_AXE_HEAD_CAST =
+            ITEMS.register("small_axe_head_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> BROAD_AXE_HEAD_CAST =
+            ITEMS.register("broad_axe_head_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> ADZE_HEAD_CAST =
+            ITEMS.register("adze_head_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> LARGE_PLATE_CAST =
+            ITEMS.register("large_plate_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> SMALL_BLADE_CAST =
+            ITEMS.register("small_blade_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> LARGE_BLADE_CAST =
+            ITEMS.register("large_blade_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> TOOL_HANDLE_CAST =
+            ITEMS.register("tool_handle_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> TOUGH_HANDLE_CAST =
+            ITEMS.register("tough_handle_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> TOOL_BINDING_CAST =
+            ITEMS.register("tool_binding_cast", () -> new Item(new Item.Properties()));
+    public static final DeferredItem<Item> TOUGH_BINDING_CAST =
+            ITEMS.register("tough_binding_cast", () -> new Item(new Item.Properties()));
+
+    public static final java.util.List<DeferredItem<Item>> CASTS = java.util.List.of(
+            PICK_HEAD_CAST, HAMMER_HEAD_CAST, SMALL_AXE_HEAD_CAST, BROAD_AXE_HEAD_CAST,
+            ADZE_HEAD_CAST, LARGE_PLATE_CAST, SMALL_BLADE_CAST, LARGE_BLADE_CAST,
+            TOOL_HANDLE_CAST, TOUGH_HANDLE_CAST, TOOL_BINDING_CAST, TOUGH_BINDING_CAST);
 }

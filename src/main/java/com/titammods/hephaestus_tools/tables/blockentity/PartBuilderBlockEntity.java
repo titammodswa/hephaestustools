@@ -1,6 +1,8 @@
 package com.titammods.hephaestus_tools.tables.blockentity;
 
 import com.titammods.hephaestus_tools.registry.ModBlocks;
+import com.titammods.hephaestus_tools.registry.ModRecipes;
+import com.titammods.hephaestus_tools.recipe.PartRecipe;
 import com.titammods.hephaestus_tools.tables.menu.PartBuilderMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -31,7 +33,7 @@ public class PartBuilderBlockEntity extends BaseContainerBlockEntity implements 
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
-            if (level != null && !level.isClientSide) {
+            if (slot != OUTPUT_SLOT && level != null && !level.isClientSide) {
                 updateOutput();
             }
         }
@@ -39,23 +41,101 @@ public class PartBuilderBlockEntity extends BaseContainerBlockEntity implements 
 
     private ItemStack cachedResult = ItemStack.EMPTY;
 
+    private int selectedIndex = -1;
+    @Nullable private java.util.List<PartRecipe> sortedButtons = null;
+
     public PartBuilderBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlocks.PART_BUILDER_BE.get(), pos, state);
     }
 
+    public java.util.List<PartRecipe> getSortedButtons() {
+        if (sortedButtons == null) {
+            if (level == null) return java.util.Collections.emptyList();
+            sortedButtons = level.getRecipeManager()
+                    .getAllRecipesFor(ModRecipes.PART_BUILDER.get())
+                    .stream()
+                    .map(net.minecraft.world.item.crafting.RecipeHolder::value)
+                    .sorted(java.util.Comparator.comparing(r -> r.resultPart().toString()))
+                    .toList();
+        }
+        return sortedButtons;
+    }
+
+    public int getSelectedIndex() {
+        return selectedIndex;
+    }
+
+    public void selectRecipe(int index) {
+        java.util.List<PartRecipe> buttons = getSortedButtons();
+        this.selectedIndex = (index >= 0 && index < buttons.size()) ? index : -1;
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            updateOutput();
+            level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    @Nullable
+    public PartRecipe getSelectedRecipe() {
+        java.util.List<PartRecipe> buttons = getSortedButtons();
+        return (selectedIndex >= 0 && selectedIndex < buttons.size()) ? buttons.get(selectedIndex) : null;
+    }
+
     public void updateOutput() {
-        cachedResult = ItemStack.EMPTY;
+        cachedResult = computeResult();
+        items.setStackInSlot(OUTPUT_SLOT, cachedResult.copy());
+    }
+
+    private ItemStack computeResult() {
+        if (level == null) return ItemStack.EMPTY;
+        PartRecipe recipe = getSelectedRecipe();
+        if (recipe == null) return ItemStack.EMPTY;
+
+        ItemStack mat = items.getStackInSlot(MATERIAL_SLOT);
+        ItemStack pat = items.getStackInSlot(PATTERN_SLOT);
+        if (mat.isEmpty() || pat.isEmpty()) return ItemStack.EMPTY;
+
+        var patId = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(pat.getItem());
+        if (!recipe.patternItem().equals(patId)) return ItemStack.EMPTY;
+
+        if (mat.getCount() < recipe.materialCost()) return ItemStack.EMPTY;
+
+        com.titammods.hephaestus_tools.materials.MaterialId matId = findMaterial(mat);
+        if (matId == null) return ItemStack.EMPTY;
+
+        if (isFoundryMaterial(matId)) return ItemStack.EMPTY;
+
+        var item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(recipe.resultPart());
+        if (!(item instanceof com.titammods.hephaestus_tools.tools.part.ToolPartItem part)) return ItemStack.EMPTY;
+        var stats = com.titammods.hephaestus_tools.materials.MaterialManager.getInstance()
+                .getStatsForSlot(matId, part.getPartSlot());
+        if (stats == null || stats == com.titammods.hephaestus_tools.materials.MaterialStats.EMPTY) {
+            return ItemStack.EMPTY;
+        }
+
+        return recipe.createResult(matId);
+    }
+
+    @Nullable
+    private com.titammods.hephaestus_tools.materials.MaterialId findMaterial(ItemStack stack) {
+        for (var m : com.titammods.hephaestus_tools.materials.MaterialManager.getInstance().getAllMaterials()) {
+            if (m.ingredient().test(stack)) return m.id();
+        }
+        return null;
+    }
+
+    public static boolean isFoundryMaterial(com.titammods.hephaestus_tools.materials.MaterialId id) {
+        return net.minecraft.core.registries.BuiltInRegistries.FLUID.containsKey(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("hephaestus", "molten_" + id.id().getPath()));
     }
 
     public ItemStack getCachedResult() { return cachedResult; }
 
     public void craft(Player player) {
-        if (cachedResult.isEmpty()) return;
-        ItemStack result = cachedResult.copy();
-        items.extractItem(MATERIAL_SLOT, 1, false);
-        if (!player.getInventory().add(result)) {
-            player.drop(result, false);
-        }
+        PartRecipe recipe = getSelectedRecipe();
+        if (recipe == null || cachedResult.isEmpty()) return;
+        items.extractItem(MATERIAL_SLOT, recipe.materialCost(), false);
+        items.extractItem(PATTERN_SLOT, 1, false);
         updateOutput();
     }
 
@@ -148,9 +228,22 @@ public class PartBuilderBlockEntity extends BaseContainerBlockEntity implements 
     }
 
     @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = super.getUpdateTag(registries);
+        tag.putInt("selected", selectedIndex);
+        return tag;
+    }
+
+    @Override
+    public net.minecraft.network.protocol.Packet<net.minecraft.network.protocol.game.ClientGamePacketListener> getUpdatePacket() {
+        return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
         tag.put("inventory", items.serializeNBT(registries));
+        tag.putInt("selected", selectedIndex);
     }
 
     @Override
@@ -159,5 +252,7 @@ public class PartBuilderBlockEntity extends BaseContainerBlockEntity implements 
         if (tag.contains("inventory")) {
             items.deserializeNBT(registries, tag.getCompound("inventory"));
         }
+        this.selectedIndex = tag.contains("selected") ? tag.getInt("selected") : -1;
+        this.sortedButtons = null;
     }
 }
