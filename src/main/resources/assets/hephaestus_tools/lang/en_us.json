@@ -153,5 +153,12 @@
   "trait.hephaestus_tools.dense": "Dense",
   "trait.hephaestus_tools.solid": "Solid",
   "trait.hephaestus_tools.featherweight": "Featherweight",
-  "trait.hephaestus_tools.heavy": "Heavy"
+  "trait.hephaestus_tools.heavy": "Heavy",
+  "trait.hephaestus_tools.smite": "Smite",
+  "trait.hephaestus_tools.jagged": "Jagged",
+  "trait.hephaestus_tools.pierce": "Pierce",
+  "trait.hephaestus_tools.cultivated": "Cultivated",
+  "trait.hephaestus_tools.magnetic": "Magnetic",
+  "trait.hephaestus_tools.temperate": "Temperate",
+  "trait.hephaestus_tools.shock": "Shock"
 }

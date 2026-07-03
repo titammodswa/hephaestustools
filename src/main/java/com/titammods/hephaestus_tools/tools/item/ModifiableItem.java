@@ -173,6 +173,20 @@ public abstract class ModifiableItem extends Item {
     }
 
     @Override
+    public void inventoryTick(ItemStack stack, net.minecraft.world.level.Level level,
+                              net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
+        super.inventoryTick(stack, level, entity, slotId, isSelected);
+        if (level.isClientSide || !(entity instanceof Player player) || !ToolStack.isInitialized(stack)) return;
+        java.util.List<com.titammods.hephaestus_tools.materials.MaterialId> mats = ToolStack.getMaterials(stack);
+        if (mats.isEmpty()) return;
+        com.titammods.hephaestus_tools.materials.MaterialStats hs =
+                com.titammods.hephaestus_tools.materials.MaterialManager.getInstance().getStatsForSlot(mats.get(0), 0);
+        if (hs == null || !hs.hasTrait()) return;
+        com.titammods.hephaestus_tools.materials.trait.MaterialTrait
+                .byId(hs.traitId()).ifPresent(t -> t.onInventoryTick(stack, level, player));
+    }
+
+    @Override
     public Component getName(ItemStack stack) {
         Component baseName = super.getName(stack);
         if (!ToolStack.isInitialized(stack)) {

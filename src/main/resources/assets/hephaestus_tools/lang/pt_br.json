@@ -126,5 +126,12 @@
   "trait.hephaestus_tools.dense": "Denso",
   "trait.hephaestus_tools.solid": "Sólido",
   "trait.hephaestus_tools.featherweight": "Peso-Pena",
-  "trait.hephaestus_tools.heavy": "Pesado"
+  "trait.hephaestus_tools.heavy": "Pesado",
+  "trait.hephaestus_tools.smite": "Sagrado",
+  "trait.hephaestus_tools.jagged": "Serrilhado",
+  "trait.hephaestus_tools.pierce": "Perfurante",
+  "trait.hephaestus_tools.cultivated": "Cultivado",
+  "trait.hephaestus_tools.magnetic": "Magnético",
+  "trait.hephaestus_tools.temperate": "Temperado",
+  "trait.hephaestus_tools.shock": "Choque"
 }

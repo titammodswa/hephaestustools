@@ -10,7 +10,8 @@
     "attack_damage": 0.0,
     "attack_speed": 1.0,
     "tier": 0,
-    "enchantability": 15
+    "enchantability": 15,
+    "trait": "cultivated"
   },
   "handle_stats": {
     "durability_mult": 0.0,
