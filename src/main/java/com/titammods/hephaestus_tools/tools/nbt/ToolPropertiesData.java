@@ -15,10 +15,11 @@ import java.util.Map;
 public record ToolPropertiesData(
         Map<String, Float> stats,
         int harvestTierOrdinal,
-        List<String> activeTraits
+        List<String> activeTraits,
+        int materialsHash
 ) {
     public static final ToolPropertiesData EMPTY = new ToolPropertiesData(
-            Map.of(), Tiers.WOOD.ordinal(), List.of()
+            Map.of(), Tiers.WOOD.ordinal(), List.of(), 0
     );
 
     public static final Codec<ToolPropertiesData> CODEC = RecordCodecBuilder.create(instance ->
@@ -26,7 +27,8 @@ public record ToolPropertiesData(
                     Codec.unboundedMap(Codec.STRING, Codec.FLOAT)
                             .fieldOf("stats").forGetter(ToolPropertiesData::stats),
                     Codec.INT.optionalFieldOf("harvest_tier", 0).forGetter(ToolPropertiesData::harvestTierOrdinal),
-                    Codec.STRING.listOf().optionalFieldOf("traits", List.of()).forGetter(ToolPropertiesData::activeTraits)
+                    Codec.STRING.listOf().optionalFieldOf("traits", List.of()).forGetter(ToolPropertiesData::activeTraits),
+                    Codec.INT.optionalFieldOf("materials_hash", 0).forGetter(ToolPropertiesData::materialsHash)
             ).apply(instance, ToolPropertiesData::new)
     );
 
@@ -36,8 +38,13 @@ public record ToolPropertiesData(
                     ToolPropertiesData::stats,
                     ByteBufCodecs.VAR_INT, ToolPropertiesData::harvestTierOrdinal,
                     ByteBufCodecs.STRING_UTF8.apply(ByteBufCodecs.list()), ToolPropertiesData::activeTraits,
+                    ByteBufCodecs.VAR_INT, ToolPropertiesData::materialsHash,
                     ToolPropertiesData::new
             );
+
+    public ToolPropertiesData withMaterialsHash(int hash) {
+        return new ToolPropertiesData(stats, harvestTierOrdinal, activeTraits, hash);
+    }
 
     public float getStat(String key, float defaultValue) {
         return stats.getOrDefault(key, defaultValue);
@@ -119,7 +126,7 @@ public record ToolPropertiesData(
         }
 
         public ToolPropertiesData build() {
-            return new ToolPropertiesData(Map.copyOf(stats), harvestTierOrdinal, traits);
+            return new ToolPropertiesData(Map.copyOf(stats), harvestTierOrdinal, traits, 0);
         }
     }
 }

@@ -354,5 +354,6 @@
   "gui.hephaestus_tools.upgrade.flame.desc": "Burns targets on hit.",
   "gui.hephaestus_tools.upgrade.silk_touch.desc": "Harvests blocks intact.",
   "gui.hephaestus_tools.upgrade.sweeping.desc": "Hits nearby enemies.",
-  "tool_stat.hephaestus_tools.harvest": "Harvest Tier"
+  "tool_stat.hephaestus_tools.harvest": "Harvest Tier",
+  "gui.hephaestus_tools.build.mastery_requires_level": "Requires tool level %s to be applied."
 }

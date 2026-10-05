@@ -29,7 +29,8 @@ public class MaterialManager extends SimpleJsonResourceReloadListener {
 
     private static MaterialManager INSTANCE = new MaterialManager();
 
-    private final Map<MaterialId, Material> materials = new LinkedHashMap<>();
+    private volatile Map<MaterialId, Material> materials = new LinkedHashMap<>();
+    private volatile Map<MaterialId, Integer> fingerprints = Map.of();
 
     private MaterialManager() {
         super(GSON, FOLDER);
@@ -41,7 +42,7 @@ public class MaterialManager extends SimpleJsonResourceReloadListener {
 
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> resources, ResourceManager manager, ProfilerFiller profiler) {
-        materials.clear();
+        Map<MaterialId, Material> parsed = new LinkedHashMap<>();
         int loaded = 0;
         int failed = 0;
 
@@ -50,7 +51,7 @@ public class MaterialManager extends SimpleJsonResourceReloadListener {
             try {
                 Material material = Material.CODEC.parse(JsonOps.INSTANCE, entry.getValue())
                         .getOrThrow(msg -> new IllegalStateException("Falha ao parsear material " + loc + ": " + msg));
-                materials.put(material.id(), material);
+                parsed.put(material.id(), material);
                 loaded++;
             } catch (Exception e) {
                 LOGGER.error("Falha ao carregar material {}: {}", loc, e.getMessage());
@@ -58,7 +59,28 @@ public class MaterialManager extends SimpleJsonResourceReloadListener {
             }
         }
 
+        replaceAll(parsed);
         LOGGER.info("[HephaestusTools] Materiais carregados: {} OK, {} falhas", loaded, failed);
+    }
+
+    private void replaceAll(Map<MaterialId, Material> source) {
+        Map<MaterialId, Integer> next = new HashMap<>();
+        source.forEach((id, material) -> next.put(id, Objects.hash(
+                material.id(), material.color(),
+                material.headStats(), material.handleStats(), material.bindingStats())));
+        materials = source;
+        fingerprints = Map.copyOf(next);
+    }
+
+    public OptionalInt fingerprint(List<MaterialId> ids) {
+        Map<MaterialId, Integer> known = fingerprints;
+        int hash = 1;
+        for (MaterialId id : ids) {
+            Integer part = known.get(id);
+            if (part == null) return OptionalInt.empty();
+            hash = 31 * hash + part;
+        }
+        return OptionalInt.of(hash);
     }
 
     public MaterialStats getStats(MaterialId id) {
@@ -101,8 +123,7 @@ public class MaterialManager extends SimpleJsonResourceReloadListener {
     }
 
     public static void receiveSync(Map<MaterialId, Material> synced) {
-        INSTANCE.materials.clear();
-        INSTANCE.materials.putAll(synced);
+        INSTANCE.replaceAll(new LinkedHashMap<>(synced));
         LOGGER.info("[HephaestusTools] Materiais recebidos do servidor: {}", synced.size());
     }
 }

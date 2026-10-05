@@ -333,5 +333,6 @@
   "layout.hephaestus_tools.scythe": "Foice",
   "layout.hephaestus_tools.dagger": "Adaga",
   "layout.hephaestus_tools.sword": "Espada",
-  "layout.hephaestus_tools.cleaver": "Cutelo"
+  "layout.hephaestus_tools.cleaver": "Cutelo",
+  "gui.hephaestus_tools.build.mastery_requires_level": "Requer nível %s da ferramenta para ser aplicada."
 }

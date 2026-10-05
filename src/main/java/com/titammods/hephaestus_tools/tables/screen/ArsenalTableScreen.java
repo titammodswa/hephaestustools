@@ -476,7 +476,9 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
             String chosen=com.titammods.hephaestus_tools.table.ToolMastery.selected(menu.tool());
             lines.addAll(font.split(tr(chosen.isEmpty()?"mastery_permanent":"mastery_locked")
                     .copy().withStyle(net.minecraft.ChatFormatting.GOLD),180));
-            lines.addAll(font.split(tr("mastery_preview"),180));
+            var requirement=Component.translatable("gui.hephaestus_tools.build.mastery_requires_level",com.titammods.hephaestus_tools.table.MasteryLevel.T1);
+            if(com.titammods.hephaestus_tools.table.ToolXp.getLevel(menu.tool())<com.titammods.hephaestus_tools.table.MasteryLevel.T1) requirement.withStyle(net.minecraft.ChatFormatting.RED);
+            lines.addAll(font.split(requirement,180));
         }
         g.renderTooltip(font,lines,mx,my);
     }

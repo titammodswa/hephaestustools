@@ -17,7 +17,33 @@ import java.util.List;
 
 public final class ToolBuildHandler {
 
+    public static final float HANDLE_STAT_SHARE = 0.15f;
+    public static final float BINDING_STAT_SHARE = 0.25f;
+    private static final float EXTRA_PART_WEIGHT = 0.5f;
+
+    public record SupportStats(float durability, float miningSpeed, float attackDamage, float enchantability) {}
+
+    private record PartContribution(MaterialId id, MaterialStats slot) {}
+
     private ToolBuildHandler() {}
+
+    public static float shareForSlot(int slot) {
+        return slot == 2 ? BINDING_STAT_SHARE : HANDLE_STAT_SHARE;
+    }
+
+    public static SupportStats supportStats(MaterialId id, int slot) {
+        MaterialManager mm = MaterialManager.getInstance();
+        MaterialStats source = mm.getStats(id);
+        float share = shareForSlot(slot);
+        float durability = slot == 2
+                ? mm.getStatsForSlot(id, 2).durability()
+                : source.durability() * share;
+        return new SupportStats(
+                durability,
+                source.miningSpeed() * share,
+                source.attackDamage() * share,
+                source.enchantability() * share);
+    }
 
     public static ItemStack buildTool(net.minecraft.world.item.Item toolItem, List<MaterialId> materials) {
         ItemStack stack = new ItemStack(toolItem);
@@ -68,8 +94,8 @@ public final class ToolBuildHandler {
         List<net.minecraft.world.item.Item> layoutParts = getToolParts(stack.getItem());
 
         List<MaterialStats> headParts = new ArrayList<>();
-        List<MaterialStats> handleParts = new ArrayList<>();
-        List<MaterialStats> bindingParts = new ArrayList<>();
+        List<PartContribution> handleParts = new ArrayList<>();
+        List<PartContribution> bindingParts = new ArrayList<>();
         for (int i = 0; i < materials.size(); i++) {
             int role;
             if (i < layoutParts.size()
@@ -81,8 +107,8 @@ public final class ToolBuildHandler {
             MaterialId id = materials.get(i);
             switch (role) {
                 case 0 -> headParts.add(mm.getStatsForSlot(id, 0));
-                case 2 -> bindingParts.add(mm.getStatsForSlot(id, 2));
-                default -> handleParts.add(mm.getStatsForSlot(id, 1));
+                case 2 -> bindingParts.add(new PartContribution(id, mm.getStatsForSlot(id, 2)));
+                default -> handleParts.add(new PartContribution(id, mm.getStatsForSlot(id, 1)));
             }
         }
         if (headParts.isEmpty()) headParts.add(mm.getStats(materials.get(0)));
@@ -108,35 +134,55 @@ public final class ToolBuildHandler {
         float speedMult = 1.0f;
         float damageMult = 1.0f;
         float attackSpeedMult = 1.0f;
+        float supportDurability = 0f;
+        float supportMiningSpeed = 0f;
+        float supportAttackDamage = 0f;
+        float supportEnchantability = 0f;
+
         for (int h = 0; h < handleParts.size(); h++) {
-            MaterialStats hs = handleParts.get(h);
-            float w = (h == 0) ? 1.0f : 0.5f;
+            PartContribution part = handleParts.get(h);
+            MaterialStats hs = part.slot();
+            float w = (h == 0) ? 1.0f : EXTRA_PART_WEIGHT;
             durabilityMult += hs.durabilityMult() * w;
             speedMult += hs.speedMult() * w;
             damageMult += hs.damageMult() * w;
             attackSpeedMult += hs.attackSpeedMult() * w;
+
+            SupportStats support = supportStats(part.id(), 1);
+            supportDurability += support.durability() * w;
+            supportMiningSpeed += support.miningSpeed() * w;
+            supportAttackDamage += support.attackDamage() * w;
+            supportEnchantability += support.enchantability() * w;
         }
 
-        float bindingDurabilityBonus = 0f;
-        for (MaterialStats bs : bindingParts) {
-            bindingDurabilityBonus += bs.durability();
+        for (int b = 0; b < bindingParts.size(); b++) {
+            PartContribution part = bindingParts.get(b);
+            float w = (b == 0) ? 1.0f : EXTRA_PART_WEIGHT;
+
+            SupportStats support = supportStats(part.id(), 2);
+            supportDurability += support.durability() * w;
+            supportMiningSpeed += support.miningSpeed() * w;
+            supportAttackDamage += support.attackDamage() * w;
+            supportEnchantability += support.enchantability() * w;
         }
 
-        int finalDurability = Math.max(1, (int)((baseDurability + bindingDurabilityBonus) * durabilityMult));
-        float finalMiningSpeed = Math.max(0.1f, baseMiningSpeed * speedMult);
-        float finalAttackDamage = Math.max(0f, baseAttackDamage * damageMult);
+        int finalDurability = Math.max(1, (int) ((baseDurability + supportDurability) * durabilityMult));
+        float finalMiningSpeed = Math.max(0.1f, (baseMiningSpeed + supportMiningSpeed) * speedMult);
+        float finalAttackDamage = Math.max(0f, (baseAttackDamage + supportAttackDamage) * damageMult);
         float finalAttackSpeed = Math.max(0f, baseAttackSpeed * attackSpeedMult);
+        int finalEnchantability = Math.max(1, baseEnchantability + Math.round(supportEnchantability));
 
         if (stack.getItem() instanceof com.titammods.hephaestus_tools.tools.item.ModifiableItem mi) {
             finalAttackDamage = Math.max(0f,
-                    (baseAttackDamage + mi.getAttackDamageBonus()) * damageMult * mi.getAttackDamageMultiplier());
+                    (baseAttackDamage + supportAttackDamage + mi.getAttackDamageBonus())
+                            * damageMult * mi.getAttackDamageMultiplier());
             float speedOverride = mi.getBaseAttackSpeed();
             if (speedOverride >= 0f) finalAttackSpeed = speedOverride;
         }
 
         ModifierStatContext ctx = new ModifierStatContext(
                 finalDurability, finalMiningSpeed, finalAttackDamage,
-                finalAttackSpeed, baseEnchantability, harvestTier);
+                finalAttackSpeed, finalEnchantability, harvestTier);
 
         for (var trait : com.titammods.hephaestus_tools.materials.trait.MaterialTrait.collect(construction.materials())) {
             trait.applyStats(ctx);

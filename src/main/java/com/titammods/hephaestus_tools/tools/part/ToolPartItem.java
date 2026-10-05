@@ -2,6 +2,7 @@ package com.titammods.hephaestus_tools.tools.part;
 
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.registry.ModComponents;
+import com.titammods.hephaestus_tools.tools.helper.ToolBuildHandler;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -35,7 +36,7 @@ public class ToolPartItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
-                                 List<Component> tooltip, TooltipFlag flag) {
+                                List<Component> tooltip, TooltipFlag flag) {
         MaterialId mat = getMaterial(stack);
         if (mat.isEmpty()) {
             tooltip.add(Component.translatable("tooltip.hephaestus_tools.part.no_material")
@@ -44,7 +45,7 @@ public class ToolPartItem extends Item {
         }
 
         tooltip.add(Component.translatable("tooltip.hephaestus_tools.material",
-                Component.translatable("material.hephaestus_tools." + mat.id().getPath()))
+                        Component.translatable("material.hephaestus_tools." + mat.id().getPath()))
                 .withStyle(net.minecraft.ChatFormatting.GRAY));
 
         var stats = com.titammods.hephaestus_tools.materials.MaterialManager
@@ -59,10 +60,18 @@ public class ToolPartItem extends Item {
                     Component.translatable("tooltip.hephaestus_tools.tier."
                             + stats.tier().name().toLowerCase(java.util.Locale.ROOT)).getString()));
         } else if (partSlot == 1) {
-            tooltip.add(stat("durability", pct(stats.durabilityMult())));
-            tooltip.add(stat("mining_speed", pct(stats.speedMult())));
-            tooltip.add(stat("attack_damage", pct(stats.damageMult())));
+            ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(mat, 1);
+            tooltip.add(stat("durability", plus(sup.durability()) + " " + pct(stats.durabilityMult())));
+            tooltip.add(stat("mining_speed", plus(sup.miningSpeed()) + " " + pct(stats.speedMult())));
+            tooltip.add(stat("attack_damage", plus(sup.attackDamage()) + " " + pct(stats.damageMult())));
             tooltip.add(stat("attack_speed", pct(stats.attackSpeedMult())));
+            tooltip.add(stat("enchantability", plus(sup.enchantability())));
+        } else {
+            ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(mat, partSlot);
+            tooltip.add(stat("durability", plus(sup.durability())));
+            tooltip.add(stat("mining_speed", plus(sup.miningSpeed())));
+            tooltip.add(stat("attack_damage", plus(sup.attackDamage())));
+            tooltip.add(stat("enchantability", plus(sup.enchantability())));
         }
     }
 
@@ -73,6 +82,10 @@ public class ToolPartItem extends Item {
 
     private static String fmt(float f) {
         return String.format(java.util.Locale.ROOT, "%.2f", f);
+    }
+
+    private static String plus(float value) {
+        return (value >= 0f ? "+" : "") + String.format(java.util.Locale.ROOT, "%.2f", value);
     }
 
     private static String pct(float mult) {

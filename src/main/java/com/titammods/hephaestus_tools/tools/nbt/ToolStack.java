@@ -1,22 +1,25 @@
 package com.titammods.hephaestus_tools.tools.nbt;
 
 import com.titammods.hephaestus_tools.materials.MaterialId;
+import com.titammods.hephaestus_tools.materials.MaterialManager;
 import com.titammods.hephaestus_tools.registry.ModComponents;
+import com.titammods.hephaestus_tools.tools.helper.ToolBuildHandler;
+import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
+import com.titammods.hephaestus_tools.tools.item.ToolCategory;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Tiers;
 import net.minecraft.world.item.component.Tool;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class ToolStack {
 
     private ToolStack() {}
-
 
     public static ToolConstructionData getConstruction(ItemStack stack) {
         return stack.getOrDefault(ModComponents.TOOL_CONSTRUCTION.get(), ToolConstructionData.EMPTY);
@@ -24,6 +27,11 @@ public final class ToolStack {
 
     public static boolean isInitialized(ItemStack stack) {
         return getConstruction(stack).isInitialized();
+    }
+
+    public static boolean isUsable(ItemStack stack) {
+        return !stack.isEmpty() && stack.getItem() instanceof ModifiableItem
+                && isInitialized(stack) && !isBroken(stack);
     }
 
     public static List<MaterialId> getMaterials(ItemStack stack) {
@@ -98,6 +106,18 @@ public final class ToolStack {
         int clamped = Math.max(0, Math.min(damage, maxDurability));
         boolean broken = clamped >= maxDurability;
         stack.set(ModComponents.TOOL_CONSTRUCTION.get(), old.withDamage(clamped).withBroken(broken));
+        stack.set(DataComponents.DAMAGE, clamped);
+        if (broken != old.broken()) {
+            updateToolComponent(stack, getProperties(stack));
+        }
+    }
+
+    public static void refreshIfStale(ItemStack stack) {
+        ToolPropertiesData data = stack.get(ModComponents.TOOL_PROPERTIES.get());
+        if (data == null || !isInitialized(stack)) return;
+        MaterialManager.getInstance().fingerprint(getMaterials(stack)).ifPresent(hash -> {
+            if (hash != data.materialsHash()) recalculate(stack);
+        });
     }
 
     public static boolean isBroken(ItemStack stack) {
@@ -108,41 +128,47 @@ public final class ToolStack {
         ToolConstructionData construction = getConstruction(stack);
         if (!construction.isInitialized()) return;
 
-        ToolPropertiesData properties = com.titammods.hephaestus_tools.tools.helper.ToolBuildHandler
-                .calculateProperties(stack, construction);
+        ToolPropertiesData properties = ToolBuildHandler.calculateProperties(stack, construction)
+                .withMaterialsHash(MaterialManager.getInstance().fingerprint(construction.materials()).orElse(0));
 
         stack.set(ModComponents.TOOL_PROPERTIES.get(), properties);
+
+        int damage = Math.max(0, Math.min(construction.damage(), properties.getDurability()));
+        stack.set(ModComponents.TOOL_CONSTRUCTION.get(), construction.withDamage(damage)
+                .withBroken(damage >= properties.getDurability()));
+        stack.set(DataComponents.MAX_DAMAGE, properties.getDurability());
+        stack.set(DataComponents.DAMAGE, damage);
 
         stack.remove(DataComponents.ATTRIBUTE_MODIFIERS);
 
         updateToolComponent(stack, properties);
-        stack.set(DataComponents.MAX_DAMAGE, properties.getDurability());
     }
 
     private static void updateToolComponent(ItemStack stack, ToolPropertiesData properties) {
-        if (!(stack.getItem() instanceof com.titammods.hephaestus_tools.tools.item.ModifiableItem modItem)) return;
+        if (!(stack.getItem() instanceof ModifiableItem modItem)) return;
 
+        if (isBroken(stack)) {
+            stack.set(DataComponents.TOOL, new Tool(List.of(), 0.0f, 1));
+            return;
+        }
+
+        Set<ToolCategory> categories = modItem.categories();
         Tiers tier = properties.getHarvestTier();
-        float speed = properties.getMiningSpeed();
+        float speed = Math.max(0.1f, properties.getMiningSpeed());
 
-        net.minecraft.tags.TagKey<Block> incorrectTag = switch (tier) {
-            case STONE     -> net.minecraft.tags.BlockTags.INCORRECT_FOR_STONE_TOOL;
-            case IRON      -> net.minecraft.tags.BlockTags.INCORRECT_FOR_IRON_TOOL;
-            case GOLD      -> net.minecraft.tags.BlockTags.INCORRECT_FOR_GOLD_TOOL;
-            case DIAMOND   -> net.minecraft.tags.BlockTags.INCORRECT_FOR_DIAMOND_TOOL;
-            case NETHERITE -> net.minecraft.tags.BlockTags.INCORRECT_FOR_NETHERITE_TOOL;
-            default        -> net.minecraft.tags.BlockTags.INCORRECT_FOR_WOODEN_TOOL;
-        };
+        List<Tool.Rule> rules = new ArrayList<>();
+        rules.add(Tool.Rule.deniesDrops(tier.getIncorrectBlocksForDrops()));
 
-        Tool toolComponent = new Tool(
-                List.of(
-                        Tool.Rule.deniesDrops(incorrectTag),
-                        Tool.Rule.minesAndDrops(modItem.getToolBlockTag(), speed)
-                ),
-                1.0f,
-                1
-        );
-        stack.set(DataComponents.TOOL, toolComponent);
+        if (categories.contains(ToolCategory.SWORD)) {
+            rules.add(Tool.Rule.minesAndDrops(List.of(Blocks.COBWEB), Math.max(15.0f, speed)));
+        }
+
+        for (ToolCategory category : ToolCategory.values()) {
+            if (!categories.contains(category)) continue;
+            rules.add(Tool.Rule.minesAndDrops(category.tag, speed));
+        }
+
+        stack.set(DataComponents.TOOL, new Tool(List.copyOf(rules), 1.0f, 1));
     }
 
     public static ItemStack createTool(ItemStack template, List<MaterialId> materials) {

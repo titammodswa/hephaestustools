@@ -30,6 +30,7 @@ public final class ModifierStatContext {
     public void addDurability(float flat) {
         this.durability += flat;
     }
+
     public void multiplyDurability(float factor) {
         this.durability *= (1.0f + factor);
     }
@@ -51,8 +52,18 @@ public final class ModifierStatContext {
     }
 
     public void setHarvestTier(Tiers tier) {
-        if (tier.ordinal() > this.harvestTier.ordinal()) {
+        if (miningLevel(tier) > miningLevel(this.harvestTier)) {
             this.harvestTier = tier;
         }
+    }
+
+    public static int miningLevel(Tiers tier) {
+        return switch (tier) {
+            case WOOD, GOLD -> 0;
+            case STONE -> 1;
+            case IRON -> 2;
+            case DIAMOND -> 3;
+            case NETHERITE -> 4;
+        };
     }
 }

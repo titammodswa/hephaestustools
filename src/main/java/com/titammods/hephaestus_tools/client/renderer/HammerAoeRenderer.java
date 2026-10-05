@@ -4,7 +4,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.titammods.hephaestus_tools.HephaestusTools;
+import com.titammods.hephaestus_tools.table.MasteryAoe;
+import com.titammods.hephaestus_tools.table.MasteryLevel;
+import com.titammods.hephaestus_tools.table.ToolMastery;
 import com.titammods.hephaestus_tools.tools.aoe.IAoeTool;
+import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -14,7 +18,9 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.BlockDestructionProgress;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -32,7 +38,13 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
 import java.lang.reflect.Field;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
+import java.util.Set;
+import java.util.function.Predicate;
 
 @EventBusSubscriber(modid = HephaestusTools.MOD_ID, value = Dist.CLIENT)
 public final class HammerAoeRenderer {
@@ -49,15 +61,18 @@ public final class HammerAoeRenderer {
         if (level == null || player == null) return;
 
         ItemStack stack = player.getMainHandItem();
-        if (!(stack.getItem() instanceof IAoeTool aoeTool)) return;
+        if (!ToolStack.isUsable(stack)) return;
 
         BlockHitResult target = event.getTarget();
         if (target.getType() != HitResult.Type.BLOCK) return;
 
-        BlockState centerState = level.getBlockState(target.getBlockPos());
-        if (!aoeTool.isEffectiveOnBlock(stack, centerState, player)) return;
-
-        List<BlockPos> extra = aoeTool.getExtraBlocks(level, target, player, stack);
+        List<BlockPos> extra;
+        if (stack.getItem() instanceof IAoeTool aoeTool) {
+            if (!aoeTool.isEffectiveOnBlock(stack, level.getBlockState(target.getBlockPos()), player)) return;
+            extra = aoeTool.getExtraBlocks(level, target, player, stack);
+        } else {
+            extra = masteryBlocks(level, target, stack);
+        }
         if (extra.isEmpty()) return;
 
         PoseStack pose = event.getPoseStack();
@@ -70,6 +85,7 @@ public final class HammerAoeRenderer {
         for (BlockPos pos : extra) {
             if (!level.getWorldBorder().isWithinBounds(pos)) continue;
             VoxelShape shape = level.getBlockState(pos).getShape(level, pos);
+            if (shape.isEmpty()) continue;
             renderShapeOutline(pose, vc, shape,
                     pos.getX() - camPos.x, pos.getY() - camPos.y, pos.getZ() - camPos.z,
                     0f, 0f, 0f, 0.4f);
@@ -91,7 +107,7 @@ public final class HammerAoeRenderer {
         if (level == null || player == null || mc.getCameraEntity() == null) return;
 
         ItemStack stack = player.getMainHandItem();
-        if (!(stack.getItem() instanceof IAoeTool aoeTool)) return;
+        if (!ToolStack.isUsable(stack) || !(stack.getItem() instanceof IAoeTool aoeTool)) return;
 
         HitResult result = mc.hitResult;
         if (result == null || result.getType() != HitResult.Type.BLOCK) return;
@@ -129,6 +145,49 @@ public final class HammerAoeRenderer {
 
         pose.popPose();
         crumbling.endBatch();
+    }
+
+    private static List<BlockPos> masteryBlocks(Level level, BlockHitResult hit, ItemStack stack) {
+        String mastery = ToolMastery.selected(stack);
+        int lv = MasteryLevel.of(stack);
+        if (mastery.isEmpty() || lv < MasteryLevel.T1) return List.of();
+        BlockPos pos = hit.getBlockPos();
+        return switch (mastery) {
+            case "groundworker" -> MasteryAoe.square(level, pos, hit.getDirection(), lv >= 30 ? 2 : 1, MasteryAoe::isGroundwork);
+            case "reaper" -> MasteryAoe.square(level, pos, Direction.UP,
+                    lv >= 30 ? 4 : lv >= 20 ? 3 : 2, MasteryAoe::isMatureCrop);
+            case "harvest_sweep", "replanter", "green_thumb" -> MasteryAoe.square(level, pos, Direction.UP,
+                    lv >= 30 ? 3 : lv >= 20 ? 2 : 1, MasteryAoe::isMatureCrop);
+            case "precision_felling" -> {
+                BlockState state = level.getBlockState(pos);
+                if (!state.is(BlockTags.LOGS)) yield List.of();
+                yield connected(level, pos, s -> s.is(BlockTags.LOGS) && s.getBlock() == state.getBlock(),
+                        lv >= 30 ? 32 : lv >= 20 ? 16 : 8);
+            }
+            default -> List.of();
+        };
+    }
+
+    private static List<BlockPos> connected(Level level, BlockPos origin, Predicate<BlockState> match, int limit) {
+        List<BlockPos> result = new ArrayList<>();
+        Set<BlockPos> visited = new HashSet<>();
+        Queue<BlockPos> queue = new ArrayDeque<>();
+        visited.add(origin);
+        queue.add(origin);
+        while (!queue.isEmpty()) {
+            BlockPos current = queue.poll();
+            for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++) for (int dz = -1; dz <= 1; dz++) {
+                if (dx == 0 && dy == 0 && dz == 0) continue;
+                BlockPos next = current.offset(dx, dy, dz);
+                if (!visited.add(next) || !level.isInWorldBounds(next) || !level.hasChunkAt(next)) continue;
+                if (match.test(level.getBlockState(next))) {
+                    result.add(next);
+                    queue.add(next);
+                    if (result.size() >= limit) return result;
+                }
+            }
+        }
+        return result;
     }
 
     private static Field destroyingBlocksField;

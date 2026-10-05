@@ -57,7 +57,8 @@ public interface IAoeTool {
 
         while (!queue.isEmpty() && result.size() < VEIN_CAP) {
             DistancePos dp = queue.remove();
-            if (world.getBlockState(dp.pos).is(target)) {
+            if (world.isInWorldBounds(dp.pos) && world.hasChunkAt(dp.pos)
+                    && world.getBlockState(dp.pos).is(target)) {
                 if (dp.distance < maxDistance) enqueueVeinNeighbors(dp.pos, dp.distance + 1, visited, queue);
                 result.add(dp.pos);
             }
@@ -97,9 +98,10 @@ public interface IAoeTool {
                     for (int dz = -1; dz <= 1; dz++) {
                         if (dx == 0 && dy == 0 && dz == 0) continue;
                         BlockPos n = pos.offset(dx, dy, dz);
-                        if (!visited.add(n)) continue;
+                        if (!visited.add(n) || !world.isInWorldBounds(n) || !world.hasChunkAt(n)) continue;
                         if (world.getBlockState(n).is(target)) {
                             result.add(n);
+                            if (result.size() >= TREE_CAP) return result;
                             queue.add(n);
                         }
                     }

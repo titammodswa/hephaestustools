@@ -1,5 +1,6 @@
 package com.titammods.hephaestus_tools.tools.aoe;
 
+import com.titammods.hephaestus_tools.table.MasteryAoe;
 import com.titammods.hephaestus_tools.table.MasteryLevel;
 import com.titammods.hephaestus_tools.table.ToolMastery;
 import net.minecraft.core.BlockPos;
@@ -25,10 +26,25 @@ public final class AoeBox {
                 int add = lv >= MasteryLevel.T3 ? 3 : lv >= MasteryLevel.T2 ? 2 : 1;
                 return new int[]{add, add, 0};
             }
+            case "clean_dig" -> {
+                int add = lv >= MasteryLevel.T3 ? 1 : 0;
+                return new int[]{add, add, 0};
+            }
             default -> { return ZERO; }
         }
     }
     private static final int[] ZERO = {0, 0, 0};
+    private static final float BASE_HARDNESS_LIMIT = 3f;
+
+    public static float hardnessLimit(ItemStack stack) {
+        if (!ToolMastery.selected(stack).equals("unstoppable")) return BASE_HARDNESS_LIMIT;
+        int lv = MasteryLevel.of(stack);
+        return lv >= MasteryLevel.T3 ? 8f : lv >= MasteryLevel.T2 ? 6f : lv >= MasteryLevel.T1 ? 4f : BASE_HARDNESS_LIMIT;
+    }
+
+    public static boolean isCleanDig(ItemStack stack) {
+        return ToolMastery.selected(stack).equals("clean_dig") && MasteryLevel.of(stack) >= MasteryLevel.T1;
+    }
 
     public static int[] effectiveRadii(ItemStack stack, IAoeTool tool) {
         int[] b = masteryBonus(stack);
@@ -44,6 +60,8 @@ public final class AoeBox {
 
         BlockState centerState = world.getBlockState(center);
         float refHardness = centerState.getDestroySpeed(world, center);
+        float hardnessLimit = hardnessLimit(stack);
+        BlockState cleanRef = isCleanDig(stack) ? centerState : null;
 
         Direction depthDir = side.getOpposite();
         Direction widthDir, heightDir;
@@ -63,20 +81,23 @@ public final class AoeBox {
                     if (dw == 0 && dh == 0 && dd == 0) continue;
                     m.set(center);
                     m.move(widthDir, dw).move(heightDir, dh).move(depthDir, dd);
-                    if (isEffective(world, m, refHardness, stack, tool)) out.add(m.immutable());
+                    if (isEffective(world, m, refHardness, hardnessLimit, cleanRef, stack, tool)) out.add(m.immutable());
                 }
             }
         }
         return out;
     }
 
-    private static boolean isEffective(Level world, BlockPos pos, float refHardness, ItemStack stack, IAoeTool tool) {
+    private static boolean isEffective(Level world, BlockPos pos, float refHardness, float hardnessLimit,
+                                       BlockState cleanRef, ItemStack stack, IAoeTool tool) {
+        if (!world.isInWorldBounds(pos) || !world.hasChunkAt(pos)) return false;
         BlockState state = world.getBlockState(pos);
         if (state.isAir()) return false;
         float hardness = state.getDestroySpeed(world, pos);
         if (hardness == -1) return false;
-        boolean hardnessOk = refHardness == 0 ? hardness == 0 : (hardness / refHardness) <= 3f;
+        boolean hardnessOk = refHardness == 0 ? hardness == 0 : (hardness / refHardness) <= hardnessLimit;
         if (!hardnessOk) return false;
+        if (cleanRef != null && !MasteryAoe.isCleanDig(cleanRef, state)) return false;
         return tool.isEffectiveOnBlock(stack, state, null);
     }
 }

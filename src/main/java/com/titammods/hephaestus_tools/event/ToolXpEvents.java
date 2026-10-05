@@ -4,7 +4,7 @@ import com.titammods.hephaestus_tools.HephaestusTools;
 import com.titammods.hephaestus_tools.table.ToolRole;
 import com.titammods.hephaestus_tools.table.ToolUpgrades;
 import com.titammods.hephaestus_tools.table.ToolXp;
-import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
+import com.titammods.hephaestus_tools.tools.helper.ToolCombat;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
@@ -13,9 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.common.Tags;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
-import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 
 import java.util.Set;
 
@@ -25,16 +23,16 @@ public final class ToolXpEvents {
 
     private static ItemStack tool(ServerPlayer p) {
         ItemStack t = p.getMainHandItem();
-        return (t.getItem() instanceof ModifiableItem && ToolStack.isInitialized(t)) ? t : ItemStack.EMPTY;
+        return ToolStack.isUsable(t) ? t : ItemStack.EMPTY;
     }
 
-    @SubscribeEvent
-    public static void onBreak(BlockEvent.BreakEvent e) {
-        if (!(e.getPlayer() instanceof ServerPlayer p)) return;
-        ItemStack tool = tool(p);
-        if (tool.isEmpty()) return;
+    public static void afterBreak(ServerPlayer p, BlockState st) {
+        afterBreak(p, tool(p), st);
+    }
+
+    public static void afterBreak(ServerPlayer p, ItemStack tool, BlockState st) {
+        if (!ToolStack.isUsable(tool)) return;
         Set<ToolRole> roles = ToolUpgrades.rolesOf(tool.getItem());
-        BlockState st = e.getState();
         int xp = 0;
         if (roles.contains(ToolRole.MINING)) {
             if (st.is(Tags.Blocks.ORES)) xp = 5;
@@ -46,18 +44,15 @@ public final class ToolXpEvents {
     }
 
     @SubscribeEvent
-    public static void onHit(LivingIncomingDamageEvent e) {
+    public static void onHit(LivingDamageEvent.Post e) {
         if (!(e.getSource().getEntity() instanceof ServerPlayer p)) return;
-        ItemStack tool = tool(p);
+        if (e.getNewDamage() <= 0) return;
+        ItemStack tool = ToolCombat.tool(e.getEntity(), e.getSource());
         if (tool.isEmpty() || !ToolUpgrades.rolesOf(tool.getItem()).contains(ToolRole.COMBAT)) return;
-        ToolXp.addXp(tool, p, Math.max(1, (int) (e.getAmount() / 3f)));
+        ToolXp.addXp(tool, p, Math.max(1, (int) (e.getNewDamage() / 3f)));
     }
 
-    @SubscribeEvent
-    public static void onKill(LivingDeathEvent e) {
-        if (!(e.getSource().getEntity() instanceof ServerPlayer p)) return;
-        ItemStack tool = tool(p);
-        if (tool.isEmpty() || !ToolUpgrades.rolesOf(tool.getItem()).contains(ToolRole.COMBAT)) return;
-        ToolXp.addXp(tool, p, 5);
+    public static void onMeleeKill(ItemStack tool, ServerPlayer player) {
+        if (ToolUpgrades.rolesOf(tool.getItem()).contains(ToolRole.COMBAT)) ToolXp.addXp(tool, player, 5);
     }
 }

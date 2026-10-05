@@ -5,6 +5,7 @@ import com.titammods.hephaestus_tools.materials.MaterialManager;
 import com.titammods.hephaestus_tools.registry.ModMenus;
 import com.titammods.hephaestus_tools.table.ArsenalTableLayout;
 import com.titammods.hephaestus_tools.table.ToolAssembly;
+import com.titammods.hephaestus_tools.tools.helper.ToolBuildHandler;
 import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import com.titammods.hephaestus_tools.tools.part.ToolPartItem;
@@ -88,6 +89,7 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
         if (stack.isEmpty()) return false;
         if (isRepair()) {
             if (part != 0 || !ToolStack.isInitialized(tool())) return false;
+            if (swapIndexFor(tool(), stack) >= 0) return true;
             var material = MaterialManager.getInstance().getMaterial(ToolStack.getMaterial(tool(), 0));
             return material != null && material.ingredient().test(stack);
         }
@@ -96,12 +98,47 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
                 && MaterialManager.getInstance().getMaterial(p.getMaterial(stack)) != null;
     }
 
+    private int swapIndexFor(ItemStack tool, ItemStack stack) {
+        if (tool.isEmpty() || stack.isEmpty()) return -1;
+        if (!(stack.getItem() instanceof ToolPartItem incoming)) return -1;
+        MaterialId material = incoming.getMaterial(stack);
+        if (material == null || material.isEmpty()) return -1;
+        if (MaterialManager.getInstance().getMaterial(material) == null) return -1;
+
+        List<Item> layout = ToolBuildHandler.getToolParts(tool.getItem());
+        List<MaterialId> materials = ToolStack.getMaterials(tool);
+        int count = Math.min(layout.size(), materials.size());
+        for (int i = 0; i < count; i++) {
+            if (layout.get(i) == stack.getItem() && !material.equals(materials.get(i))) return i;
+        }
+        return -1;
+    }
+
+    private ItemStack swapResult(ItemStack tool, ItemStack stack) {
+        int index = swapIndexFor(tool, stack);
+        if (index < 0) return ItemStack.EMPTY;
+
+        List<MaterialId> materials = new ArrayList<>(ToolStack.getMaterials(tool));
+        materials.set(index, ((ToolPartItem) stack.getItem()).getMaterial(stack));
+
+        ItemStack result = tool.copyWithCount(1);
+        int damage = ToolStack.getCurrentDamage(result);
+        boolean broken = ToolStack.isBroken(result);
+        ToolStack.setMaterials(result, materials);
+        ToolStack.recalculate(result);
+        int durability = ToolStack.getDurability(result);
+        result.setDamageValue(broken ? damage : Math.min(damage, Math.max(0, durability - 1)));
+        return result;
+    }
+
     public ItemStack preview() {
         if (activeTab != 0) return ItemStack.EMPTY;
         if (isRepair()) {
-            if (!ToolStack.isInitialized(tool()) || !(tool().getItem() instanceof ModifiableItem)
-                    || ToolStack.getCurrentDamage(tool()) <= 0 || !accepts(0, input(0))) return ItemStack.EMPTY;
+            if (!ToolStack.isInitialized(tool()) || !(tool().getItem() instanceof ModifiableItem)) return ItemStack.EMPTY;
             for (int i = 1; i < 4; i++) if (!input(i).isEmpty()) return ItemStack.EMPTY;
+            ItemStack swapped = swapResult(tool(), input(0));
+            if (!swapped.isEmpty()) return swapped;
+            if (ToolStack.getCurrentDamage(tool()) <= 0 || !accepts(0, input(0))) return ItemStack.EMPTY;
             ItemStack result = tool().copyWithCount(1);
             int restored = Math.max(1, (ToolStack.getDurability(result) + REPAIR_DIVISOR - 1) / REPAIR_DIVISOR);
             result.setDamageValue(Math.max(0, ToolStack.getCurrentDamage(result) - restored));
@@ -199,7 +236,30 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
             }
         }
         super.clicked(slotId, button, type, player);
-        if (slotId == 1 && type == ClickType.PICKUP && isRepair()) attemptRepair();
+        if (slotId == 1 && type == ClickType.PICKUP && isRepair()
+                && !attemptPartSwap(player)) attemptRepair();
+    }
+
+    private boolean attemptPartSwap(Player player) {
+        ItemStack current = output();
+        ItemStack incoming = input(0);
+        if (current.isEmpty() || incoming.isEmpty()) return false;
+
+        int index = swapIndexFor(current, incoming);
+        if (index < 0) return false;
+
+        MaterialId previous = ToolStack.getMaterial(current, index);
+        ItemStack swapped = swapResult(current, incoming);
+        if (swapped.isEmpty()) return false;
+
+        ItemStack returned = ((ToolPartItem) incoming.getItem()).withMaterial(previous);
+
+        blockEntity.getOutputSlot().setStackInSlot(0, swapped);
+        blockEntity.getInputSlots().extractItem(0, 1, false);
+        if (!returned.isEmpty() && !player.getInventory().add(returned)) player.drop(returned, false);
+        blockEntity.setChanged();
+        broadcastChanges();
+        return true;
     }
 
     private void attemptRepair() {

@@ -1,95 +1,118 @@
 package com.titammods.hephaestus_tools.event;
 
-import com.titammods.hephaestus_tools.HephaestusTools;
 import com.titammods.hephaestus_tools.table.MasteryAoe;
 import com.titammods.hephaestus_tools.table.MasteryLevel;
 import com.titammods.hephaestus_tools.table.ToolMastery;
-import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
-import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
+import com.titammods.hephaestus_tools.tools.aoe.PlayerBlockBreaks;
+import com.titammods.hephaestus_tools.tools.helper.ToolDurability;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.Blocks;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.CommonHooks;
+import net.neoforged.neoforge.common.ItemAbilities;
 
-@EventBusSubscriber(modid = HephaestusTools.MOD_ID, bus = EventBusSubscriber.Bus.GAME)
+import java.util.List;
+
 public final class MasteryInteract {
+    private static final ThreadLocal<Boolean> TILLING = ThreadLocal.withInitial(() -> false);
+
     private MasteryInteract() {}
 
-    private static String mastery(ItemStack t) {
-        if (!(t.getItem() instanceof ModifiableItem) || !ToolStack.isInitialized(t)) return "";
-        return ToolMastery.selected(t);
+    public static boolean isTilling() { return TILLING.get(); }
+
+    public static boolean isCultivator(ItemStack tool) {
+        return PlayerBlockBreaks.isUsable(tool) && ToolMastery.selected(tool).equals("cultivator");
     }
 
-    @SubscribeEvent
-    public static void onRightClick(PlayerInteractEvent.RightClickBlock e) {
-        Player p = e.getEntity();
-        if (p.level().isClientSide || !(p instanceof ServerPlayer sp) || !(p.level() instanceof ServerLevel sl)) return;
-        ItemStack tool = e.getItemStack();
-        String m = mastery(tool);
-        if (m.isEmpty()) return;
-        int lv = MasteryLevel.of(tool);
-        int r = lv >= 30 ? 2 : 1;
-        if (m.equals("cultivator")) till(sl, sp, tool, e.getPos(), r);
-        else if (m.equals("homesteader")) plant(sl, sp, tool, e.getPos(), r);
-        else if (m.equals("reaper") || m.equals("harvest_sweep") || m.equals("replanter") || m.equals("green_thumb"))
-            harvest(sl, sp, tool, m, lv);
-    }
-
-    private static void harvest(ServerLevel l, ServerPlayer p, ItemStack tool, String m, int lv) {
-        int r = m.equals("reaper") ? (lv>=30?4:lv>=20?3:2) : (lv>=30?3:lv>=20?2:1);
-        var area = MasteryAoe.square(l, p, r, MasteryAoe::isMatureCrop);
-        MasteryAoe.harvestCrops(l, p, tool, area, m.equals("replanter"), m.equals("green_thumb"));
-    }
-
-    private static void till(ServerLevel l, ServerPlayer p, ItemStack tool, BlockPos c, int r) {
-        boolean any = false;
-        for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
-            BlockPos pos = c.offset(dx, 0, dz);
-            var s = l.getBlockState(pos);
-            boolean tillable = s.is(Blocks.GRASS_BLOCK) || s.is(Blocks.DIRT) || s.is(Blocks.DIRT_PATH)
-                    || s.is(Blocks.COARSE_DIRT) || s.is(Blocks.ROOTED_DIRT);
-            if (tillable && l.getBlockState(pos.above()).isAir()) {
-                l.setBlock(pos, Blocks.FARMLAND.defaultBlockState(), 3); any = true;
+    public static InteractionResult useFirst(UseOnContext context) {
+        if (!(context.getPlayer() instanceof ServerPlayer player)
+                || !PlayerBlockBreaks.isUsable(context.getItemInHand())
+                || !player.getAbilities().mayBuild) return InteractionResult.PASS;
+        ItemStack tool = context.getItemInHand();
+        String mastery = ToolMastery.selected(tool);
+        int level = MasteryLevel.of(tool);
+        int radius = level >= 30 ? 2 : 1;
+        boolean changed = switch (mastery) {
+            case "cultivator" -> till(player, context, radius);
+            case "homesteader" -> plant(player, context, radius);
+            case "reaper", "harvest_sweep", "replanter", "green_thumb" -> {
+                int r = mastery.equals("reaper") ? (level >= 30 ? 4 : level >= 20 ? 3 : 2)
+                        : (level >= 30 ? 3 : level >= 20 ? 2 : 1);
+                ServerLevel world = player.serverLevel();
+                List<BlockPos> area = MasteryAoe.square(world, context.getClickedPos(), Direction.UP, r,
+                        MasteryAoe::isMatureCrop, true);
+                area.removeIf(pos -> !permitted(player, context, pos));
+                yield MasteryAoe.harvestCrops(world, player, tool, area,
+                        mastery.equals("replanter"), mastery.equals("green_thumb"));
             }
-        }
-        if (any) {
-            l.playSound(null, c, SoundEvents.HOE_TILL, SoundSource.BLOCKS, 1f, 1f);
-            tool.hurtAndBreak(1, p, EquipmentSlot.MAINHAND);
-        }
+            default -> false;
+        };
+        return changed ? InteractionResult.SUCCESS : InteractionResult.PASS;
     }
 
-    private static void plant(ServerLevel l, ServerPlayer p, ItemStack tool, BlockPos c, int r) {
-        for (int dx = -r; dx <= r; dx++) for (int dz = -r; dz <= r; dz++) {
-            BlockPos farm = c.offset(dx, 0, dz), above = farm.above();
-            if (l.getBlockState(farm).is(Blocks.FARMLAND) && l.getBlockState(above).isAir()) {
-                Block crop = takeSeed(p);
-                if (crop != null) l.setBlock(above, crop.defaultBlockState(), 3);
+    private static boolean permitted(ServerPlayer player, UseOnContext origin, BlockPos pos) {
+        ItemStack tool = origin.getItemInHand();
+        if (!PlayerBlockBreaks.mayModify(player, tool, pos, origin.getClickedFace())) return false;
+        if (pos.equals(origin.getClickedPos())) return true;
+        var event = CommonHooks.onRightClickBlock(player, origin.getHand(), pos, hit(pos, origin.getClickedFace()));
+        return !event.isCanceled() && !event.getUseItem().isFalse() && !event.getUseBlock().isFalse();
+    }
+
+    private static BlockHitResult hit(BlockPos pos, Direction face) {
+        return new BlockHitResult(Vec3.atCenterOf(pos), face, pos, false);
+    }
+
+    private static boolean till(ServerPlayer player, UseOnContext origin, int radius) {
+        if (origin.getClickedFace() == Direction.DOWN) return false;
+        ItemStack tool = origin.getItemInHand();
+        boolean changed = false;
+        TILLING.set(true);
+        try {
+            for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
+                BlockPos pos = origin.getClickedPos().offset(dx, 0, dz);
+                if (!permitted(player, origin, pos)) continue;
+                BlockState before = player.level().getBlockState(pos);
+                UseOnContext context = new UseOnContext(player, origin.getHand(), hit(pos, origin.getClickedFace()));
+                if (before.getToolModifiedState(context, ItemAbilities.HOE_TILL, true) == null) continue;
+                if (tool.useOn(context).consumesAction() && player.level().getBlockState(pos) != before) changed = true;
             }
+        } finally {
+            TILLING.remove();
         }
+        if (changed) ToolDurability.hurt(tool, 1, player.serverLevel(), player);
+        return changed;
     }
 
-    private static Block takeSeed(ServerPlayer p) {
-        var inv = p.getInventory();
-        for (int i = 0; i < inv.getContainerSize(); i++) {
-            ItemStack s = inv.getItem(i);
-            if (s.isEmpty()) continue;
-            Block crop = null;
-            if (s.is(Items.WHEAT_SEEDS)) crop = Blocks.WHEAT;
-            else if (s.is(Items.CARROT)) crop = Blocks.CARROTS;
-            else if (s.is(Items.POTATO)) crop = Blocks.POTATOES;
-            else if (s.is(Items.BEETROOT_SEEDS)) crop = Blocks.BEETROOTS;
-            if (crop != null) { if (!p.getAbilities().instabuild) s.shrink(1); return crop; }
+    private static boolean plant(ServerPlayer player, UseOnContext origin, int radius) {
+        boolean changed = false;
+        for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
+            BlockPos farm = origin.getClickedPos().offset(dx, 0, dz);
+            if (!permitted(player, origin, farm) || !PlayerBlockBreaks.mayModify(player, origin.getItemInHand(), farm.above(), Direction.UP)
+                    || !player.level().getBlockState(farm).is(Blocks.FARMLAND) || !player.level().isEmptyBlock(farm.above())) continue;
+            ItemStack seed = findSeed(player);
+            if (seed.isEmpty()) break;
+            UseOnContext context = new UseOnContext(player.level(), player, origin.getHand(), seed, hit(farm, Direction.UP));
+            if (seed.useOn(context).consumesAction() && !player.level().isEmptyBlock(farm.above())) changed = true;
         }
-        return null;
+        return changed;
+    }
+
+    private static ItemStack findSeed(ServerPlayer player) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack seed = inventory.getItem(i);
+            if (seed.is(Items.WHEAT_SEEDS) || seed.is(Items.CARROT)
+                    || seed.is(Items.POTATO) || seed.is(Items.BEETROOT_SEEDS)) return seed;
+        }
+        return ItemStack.EMPTY;
     }
 }

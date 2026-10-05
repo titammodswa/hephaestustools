@@ -1,9 +1,14 @@
 package com.titammods.hephaestus_tools.tools.item;
 
+import com.titammods.hephaestus_tools.event.MasteryEvents;
+import com.titammods.hephaestus_tools.event.MasteryInteract;
+import com.titammods.hephaestus_tools.materials.trait.MaterialTrait;
+import com.titammods.hephaestus_tools.tools.helper.ToolDurability;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import com.titammods.hephaestus_tools.tools.nbt.ToolPropertiesData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
@@ -35,10 +40,8 @@ import java.util.Set;
 
 public abstract class ModifiableItem extends Item {
 
-    private static final ResourceLocation ATTACK_DAMAGE_ID =
-            ResourceLocation.fromNamespaceAndPath("hephaestus_tools", "tool_attack_damage");
-    private static final ResourceLocation ATTACK_SPEED_ID =
-            ResourceLocation.fromNamespaceAndPath("hephaestus_tools", "tool_attack_speed");
+    private static final ResourceLocation ATTACK_DAMAGE_ID = Item.BASE_ATTACK_DAMAGE_ID;
+    private static final ResourceLocation ATTACK_SPEED_ID = Item.BASE_ATTACK_SPEED_ID;
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     private static volatile long lastMineLog = 0L;
@@ -50,8 +53,20 @@ public abstract class ModifiableItem extends Item {
     public abstract Set<ToolCategory> categories();
 
     public TagKey<Block> getToolBlockTag() {
-        for (ToolCategory c : categories()) return c.tag;
+        for (ToolCategory c : ToolCategory.values()) {
+            if (categories().contains(c)) return c.tag;
+        }
         return BlockTags.MINEABLE_WITH_PICKAXE;
+    }
+
+    @Override
+    public boolean canPerformAction(ItemStack stack, ItemAbility ability) {
+        if (!ToolStack.isInitialized(stack) || ToolStack.isBroken(stack)) return false;
+        if (ability == ItemAbilities.HOE_TILL && MasteryInteract.isCultivator(stack)) return true;
+        for (ToolCategory c : categories()) {
+            if (c.ability != null && c.ability == ability) return true;
+        }
+        return false;
     }
 
     protected boolean effectiveOn(BlockState state) {
@@ -88,9 +103,6 @@ public abstract class ModifiableItem extends Item {
     @Override
     public void setDamage(ItemStack stack, int damage) {
         ToolStack.setDamage(stack, damage);
-        int maxDurability = ToolStack.getDurability(stack);
-        int clamped = Math.max(0, Math.min(damage, maxDurability));
-        stack.set(net.minecraft.core.component.DataComponents.DAMAGE, clamped);
     }
 
     @Override
@@ -111,7 +123,7 @@ public abstract class ModifiableItem extends Item {
         }
 
         ToolPropertiesData props = ToolStack.getProperties(stack);
-        float attackDamage = ToolStack.isBroken(stack) ? -1000f : props.getAttackDamage();
+        float attackDamage = ToolStack.isBroken(stack) ? 0f : Math.max(0f, props.getAttackDamage());
         float attackSpeed  = props.getAttackSpeed();
 
         return ItemAttributeModifiers.builder()
@@ -138,38 +150,28 @@ public abstract class ModifiableItem extends Item {
     @Override
     public boolean isCorrectToolForDrops(ItemStack stack, BlockState state) {
         if (!ToolStack.isInitialized(stack) || ToolStack.isBroken(stack)) return false;
-        if (categories().contains(ToolCategory.SWORD) && (state.is(Blocks.COBWEB) || state.is(BlockTags.SWORD_EFFICIENT))) return true;
         if (!effectiveOn(state)) return false;
         return hasCorrectTier(state, ToolStack.getProperties(stack).getHarvestTier());
     }
 
     private static boolean hasCorrectTier(BlockState state, Tiers tier) {
-        int level = switch (tier) {
-            case WOOD, GOLD -> 0;
-            case STONE      -> 1;
-            case IRON       -> 2;
-            case DIAMOND    -> 3;
-            case NETHERITE  -> 4;
-        };
-        if (state.is(BlockTags.NEEDS_DIAMOND_TOOL)) return level >= 3;
-        if (state.is(BlockTags.NEEDS_IRON_TOOL))    return level >= 2;
-        if (state.is(BlockTags.NEEDS_STONE_TOOL))   return level >= 1;
-        return true;
+        return !state.is(tier.getIncorrectBlocksForDrops());
     }
 
     @Override
     public boolean mineBlock(ItemStack stack, Level level, BlockState state,
                              BlockPos pos, LivingEntity entity) {
-        if (!level.isClientSide && state.getDestroySpeed(level, pos) > 0 && !ToolStack.isBroken(stack)) {
-            setDamage(stack, getDamage(stack) + 1);
+        if (level instanceof ServerLevel serverLevel && state.getDestroySpeed(level, pos) > 0
+                && !MasteryEvents.sparesAoeWear(stack, entity)) {
+            ToolDurability.hurt(stack, 1, serverLevel, entity);
         }
         return true;
     }
 
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-        if (ToolStack.isInitialized(stack) && !ToolStack.isBroken(stack)) {
-            setDamage(stack, getDamage(stack) + 1);
+        if (attacker.level() instanceof ServerLevel serverLevel) {
+            ToolDurability.hurt(stack, 1, serverLevel, attacker);
         }
         return true;
     }
@@ -177,6 +179,11 @@ public abstract class ModifiableItem extends Item {
     @Override
     public boolean isFoil(ItemStack stack) {
         return stack.isEnchanted();
+    }
+
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        return MasteryInteract.useFirst(context);
     }
 
     @Override
@@ -188,15 +195,16 @@ public abstract class ModifiableItem extends Item {
         BlockPos pos = ctx.getClickedPos();
         BlockState state = level.getBlockState(pos);
 
-        BlockState modified = null; ItemAbility ability = null;
-        for (ToolCategory c : categories()) {
-            ItemAbility a = switch (c) {
-                case AXE -> ItemAbilities.AXE_STRIP;
-                case HOE -> ItemAbilities.HOE_TILL;
-                case SHOVEL -> ItemAbilities.SHOVEL_FLATTEN;
-                default -> null;
-            };
-            if (a == null) continue;
+        BlockState modified = null;
+        ItemAbility ability = null;
+        if (MasteryInteract.isCultivator(stack) && ctx.getClickedFace() != Direction.DOWN) {
+            modified = state.getToolModifiedState(ctx, ItemAbilities.HOE_TILL, false);
+            if (modified != null) ability = ItemAbilities.HOE_TILL;
+        }
+        for (ToolCategory c : ToolCategory.values()) {
+            if (modified != null) break;
+            if (!categories().contains(c) || !c.modifiesBlockOnUse()) continue;
+            ItemAbility a = c.ability;
             if (a != ItemAbilities.AXE_STRIP
                     && (ctx.getClickedFace() == Direction.DOWN || !level.getBlockState(pos.above()).isAir())) continue;
             BlockState mod = state.getToolModifiedState(ctx, a, false);
@@ -211,7 +219,9 @@ public abstract class ModifiableItem extends Item {
                 SoundSource.BLOCKS, 1.0f, 1.0f);
         if (!level.isClientSide) {
             level.setBlock(pos, modified, 11);
-            if (player != null && !player.getAbilities().instabuild) setDamage(stack, getDamage(stack) + 1);
+            if (player != null && !MasteryInteract.isTilling() && level instanceof ServerLevel serverLevel) {
+                ToolDurability.hurt(stack, 1, serverLevel, player);
+            }
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }
@@ -263,9 +273,13 @@ public abstract class ModifiableItem extends Item {
     public void inventoryTick(ItemStack stack, Level level,
                               net.minecraft.world.entity.Entity entity, int slotId, boolean isSelected) {
         super.inventoryTick(stack, level, entity, slotId, isSelected);
-        if (level.isClientSide || !(entity instanceof Player player) || !ToolStack.isInitialized(stack)) return;
-        for (var t : com.titammods.hephaestus_tools.materials.trait.MaterialTrait.collect(ToolStack.getMaterials(stack))) {
-            t.onInventoryTick(stack, level, player);
+        if (level.isClientSide) return;
+        ToolStack.refreshIfStale(stack);
+        if (!(entity instanceof Player player) || !ToolStack.isInitialized(stack)) return;
+        for (MaterialTrait t : MaterialTrait.collect(ToolStack.getMaterials(stack))) {
+            if (ToolStack.isUsable(stack) || t == MaterialTrait.CULTIVATED) {
+                t.onInventoryTick(stack, level, player);
+            }
         }
     }
 

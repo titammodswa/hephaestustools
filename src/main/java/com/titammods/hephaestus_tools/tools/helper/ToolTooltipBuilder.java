@@ -129,14 +129,25 @@ public final class ToolTooltipBuilder {
                         out.add(prefixLine("harvest_tier", tierName(st.tier())));
                     }
                     case 1 -> {
-                        out.add(statLine("durability", pct(st.durabilityMult()), 0xFFFFFF));
-                        out.add(statLine("mining_speed", pct(st.speedMult()), 0xFFFFFF));
-                        out.add(statLine("attack_damage", pct(st.damageMult()), 0xFFFFFF));
-                        out.add(statLine("attack_speed", pct(st.attackSpeedMult()), 0xFFFFFF));
+                        ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(matId, 1);
+                        out.add(statLine("durability",
+                                plus(sup.durability()).append(Component.literal(" "))
+                                        .append(pct(st.durabilityMult())), C_DURABILITY));
+                        out.add(statLine("mining_speed",
+                                plus(sup.miningSpeed()).append(Component.literal(" "))
+                                        .append(pct(st.speedMult())), C_MINING_SPEED));
+                        out.add(statLine("attack_damage",
+                                plus(sup.attackDamage()).append(Component.literal(" "))
+                                        .append(pct(st.damageMult())), C_ATTACK_DAMAGE));
+                        out.add(statLine("attack_speed", pct(st.attackSpeedMult()), C_ATTACK_SPEED));
+                        out.add(statLine("enchantability", plus(sup.enchantability()), 0xFFFFFF));
                     }
                     default -> {
-                        if (st.durability() > 0)
-                            out.add(statLine("durability", num(st.durability()), 0xFFFFFF));
+                        ToolBuildHandler.SupportStats sup = ToolBuildHandler.supportStats(matId, 2);
+                        out.add(statLine("durability", plus(sup.durability()), C_DURABILITY));
+                        out.add(statLine("mining_speed", plus(sup.miningSpeed()), C_MINING_SPEED));
+                        out.add(statLine("attack_damage", plus(sup.attackDamage()), C_ATTACK_DAMAGE));
+                        out.add(statLine("enchantability", plus(sup.enchantability()), 0xFFFFFF));
                     }
                 }
             }
@@ -196,6 +207,10 @@ public final class ToolTooltipBuilder {
 
     private static MutableComponent num(float f) {
         return Component.literal(DECIMAL.format(f));
+    }
+
+    private static MutableComponent plus(float value) {
+        return Component.literal((value >= 0f ? "+" : "") + DECIMAL.format(value));
     }
 
     private static MutableComponent pct(float mult) {
