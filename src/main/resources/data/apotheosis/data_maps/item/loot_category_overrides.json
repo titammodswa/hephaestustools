@@ -1,0 +1,22 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "apotheosis"
+    }
+  ],
+  "values": {
+    "hephaestus_tools:pickaxe": "apotheosis:breaker",
+    "hephaestus_tools:sledge_hammer": "apotheosis:breaker",
+    "hephaestus_tools:vein_hammer": "apotheosis:breaker",
+    "hephaestus_tools:excavator": "apotheosis:breaker",
+    "hephaestus_tools:mattock": "apotheosis:breaker",
+    "hephaestus_tools:hand_axe": "apotheosis:melee_weapon",
+    "hephaestus_tools:broad_axe": "apotheosis:melee_weapon",
+    "hephaestus_tools:kama": "apotheosis:melee_weapon",
+    "hephaestus_tools:scythe": "apotheosis:melee_weapon",
+    "hephaestus_tools:dagger": "apotheosis:melee_weapon",
+    "hephaestus_tools:sword": "apotheosis:melee_weapon",
+    "hephaestus_tools:cleaver": "apotheosis:melee_weapon"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "hephaestus_tools:hand_axe",
+    "hephaestus_tools:broad_axe",
+    "hephaestus_tools:kama",
+    "hephaestus_tools:scythe"
+  ]
+}

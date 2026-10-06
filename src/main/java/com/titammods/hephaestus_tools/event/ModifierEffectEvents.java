@@ -17,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
@@ -58,15 +59,12 @@ public final class ModifierEffectEvents {
         }
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onEnchantments(GetEnchantmentLevelEvent event) {
         if (!(event.getStack() instanceof ItemStack tool) || !(tool.getItem() instanceof ModifiableItem)) return;
         for (ResourceKey<Enchantment> banned : ToolEnchantments.banned()) {
             grant(event, banned, () -> 0);
         }
-        grant(event, ToolEnchantments.UNBREAKING, () -> modLevel(tool, ModifierEffects.REINFORCED));
-        grant(event, ToolEnchantments.EFFICIENCY, () -> modLevel(tool, ModifierEffects.HASTE));
-        grant(event, ToolEnchantments.SHARPNESS, () -> modLevel(tool, ModifierEffects.SHARPNESS));
         grant(event, ToolEnchantments.SILK_TOUCH, () -> modLevel(tool, ModifierEffects.SILK_TOUCH));
         grant(event, ToolEnchantments.FORTUNE, () -> stat(tool, ToolStats.FORTUNE));
         grant(event, ToolEnchantments.LOOTING, () -> stat(tool, ToolStats.LOOTING));
