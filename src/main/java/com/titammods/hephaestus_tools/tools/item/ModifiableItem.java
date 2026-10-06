@@ -47,6 +47,7 @@ import net.neoforged.neoforge.common.ItemAbility;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -261,10 +262,11 @@ public abstract class ModifiableItem extends Item {
                     .withStyle(ChatFormatting.DARK_AQUA));
         }
 
+        Map<Identifier, Integer> bonus = ToolEnchantments.bonusLevels(stack, context.registries());
         List<Component> lines = new ArrayList<>();
         if (flag.hasShiftDown()) {
-            lines.addAll(ToolTooltipBuilder.stats(stack, true));
-            List<Component> mods = ToolTooltipBuilder.modifiers(stack, true);
+            lines.addAll(ToolTooltipBuilder.stats(stack, true, bonus));
+            List<Component> mods = ToolTooltipBuilder.modifiers(stack, true, bonus);
             if (!mods.isEmpty()) {
                 lines.add(Component.empty());
                 lines.addAll(mods);
@@ -272,7 +274,7 @@ public abstract class ModifiableItem extends Item {
         } else if (flag.hasControlDown()) {
             lines.addAll(ToolTooltipBuilder.components(stack, this));
         } else {
-            lines.addAll(ToolTooltipBuilder.defaultInfo(stack));
+            lines.addAll(ToolTooltipBuilder.defaultInfo(stack, bonus));
         }
         lines.forEach(tooltip);
     }

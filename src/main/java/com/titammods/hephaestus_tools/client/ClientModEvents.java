@@ -6,10 +6,13 @@ import com.titammods.hephaestus_tools.client.renderer.ToolItemRenderer;
 import com.titammods.hephaestus_tools.registry.ModBlocks;
 import com.titammods.hephaestus_tools.registry.ModMenus;
 import com.titammods.hephaestus_tools.tables.screen.ArsenalTableScreen;
+import com.titammods.hephaestus_tools.tools.helper.ToolEnchantments;
+import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -17,6 +20,7 @@ import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterSpecialModelRendererEvent;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 @EventBusSubscriber(modid = HephaestusTools.MOD_ID, value = Dist.CLIENT)
 public class ClientModEvents {
@@ -47,6 +51,12 @@ public class ClientModEvents {
     public static void registerReloadListeners(AddClientReloadListenersEvent event) {
         ResourceManagerReloadListener listener = manager -> ToolItemRenderer.clearTextureCache();
         event.addListener(Identifier.fromNamespaceAndPath(HephaestusTools.MOD_ID, "tool_overlay_cache"), listener);
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onItemTooltip(ItemTooltipEvent event) {
+        if (!(event.getItemStack().getItem() instanceof ModifiableItem)) return;
+        event.getToolTip().removeIf(ToolEnchantments::isMergedLine);
     }
 
     @SubscribeEvent
