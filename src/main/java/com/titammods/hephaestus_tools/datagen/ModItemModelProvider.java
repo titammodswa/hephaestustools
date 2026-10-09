@@ -20,6 +20,7 @@ public class ModItemModelProvider implements DataProvider {
     private static final String TOOL_TINT = NS + ":tool_material";
     private static final String PART_TINT = NS + ":part_material";
     private static final String MODIFIER_RENDERER = NS + ":tool_modifiers";
+    private static final String WORKBENCH_STYLE = NS + ":workbench_style";
 
     private final PackOutput.PathProvider modelItemPath;
     private final PackOutput.PathProvider itemPath;
@@ -65,6 +66,16 @@ public class ModItemModelProvider implements DataProvider {
                 "item/tool/cleaver/guard", "item/tool/cleaver/handle"));
     }
 
+    private static final Map<String, List<String>> WORKBENCH_LAYERS = new LinkedHashMap<>();
+
+    static {
+        WORKBENCH_LAYERS.put("hand_axe", List.of(
+                "item/tool/workbench/hand_axe/head", "item/tool/pickaxe/handle", "item/tool/workbench/hand_axe/binding"));
+        WORKBENCH_LAYERS.put("cleaver", List.of(
+                "item/tool/workbench/cleaver/head", "item/tool/cleaver/shield",
+                "item/tool/cleaver/guard", "item/tool/cleaver/handle"));
+    }
+
     private static final List<String> PARTS = List.of(
             "pick_head", "hammer_head", "small_axe_head", "broad_axe_head", "adze_head", "large_plate",
             "small_blade", "large_blade", "tool_handle", "tough_handle", "tool_binding", "tough_binding");
@@ -89,8 +100,16 @@ public class ModItemModelProvider implements DataProvider {
             futures.add(DataProvider.saveStable(cache, overlayBaseModel(layers.get(0)),
                     modelItemPath.json(id("tool/" + tool + "_overlay"))));
 
-            futures.add(DataProvider.saveStable(cache, toolClientItem(tool, layers.size()),
-                    itemPath.json(id(tool))));
+            List<String> workbench = WORKBENCH_LAYERS.get(tool);
+            if (workbench != null) {
+                futures.add(DataProvider.saveStable(cache, layeredToolModel(workbench),
+                        modelItemPath.json(id("tool/workbench/" + tool))));
+                futures.add(DataProvider.saveStable(cache, styledToolClientItem(tool, layers.size()),
+                        itemPath.json(id(tool))));
+            } else {
+                futures.add(DataProvider.saveStable(cache, toolClientItem(tool, layers.size()),
+                        itemPath.json(id(tool))));
+            }
         }
 
         for (String part : PARTS) {
@@ -127,10 +146,27 @@ public class ModItemModelProvider implements DataProvider {
         return j;
     }
 
+    private JsonObject styledToolClientItem(String tool, int layerCount) {
+        JsonObject condition = new JsonObject();
+        condition.addProperty("type", "minecraft:condition");
+        condition.addProperty("property", WORKBENCH_STYLE);
+        condition.add("on_true", toolComposite("tool/workbench/" + tool, tool, layerCount));
+        condition.add("on_false", toolComposite("tool/" + tool, tool, layerCount));
+        JsonObject j = new JsonObject();
+        j.add("model", condition);
+        return j;
+    }
+
     private JsonObject toolClientItem(String tool, int layerCount) {
+        JsonObject j = new JsonObject();
+        j.add("model", toolComposite("tool/" + tool, tool, layerCount));
+        return j;
+    }
+
+    private JsonObject toolComposite(String modelPath, String tool, int layerCount) {
         JsonObject base = new JsonObject();
         base.addProperty("type", "minecraft:model");
-        base.addProperty("model", NS + ":item/tool/" + tool);
+        base.addProperty("model", NS + ":item/" + modelPath);
         JsonArray tints = new JsonArray();
         for (int i = 0; i < layerCount; i++) {
             JsonObject tint = new JsonObject();
@@ -154,10 +190,7 @@ public class ModItemModelProvider implements DataProvider {
         JsonObject composite = new JsonObject();
         composite.addProperty("type", "minecraft:composite");
         composite.add("models", models);
-
-        JsonObject j = new JsonObject();
-        j.add("model", composite);
-        return j;
+        return composite;
     }
 
     private JsonObject partClientItem(String part) {

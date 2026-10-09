@@ -21,7 +21,6 @@ public final class ToolDurability {
         if (owner instanceof ServerPlayer player) {
             CriteriaTriggers.ITEM_DURABILITY_CHANGED.trigger(player, tool, next);
         }
-        // Exhausted constructions remain in the stack so the Arsenal Table can repair them.
         tool.setDamageValue(next);
     }
 }

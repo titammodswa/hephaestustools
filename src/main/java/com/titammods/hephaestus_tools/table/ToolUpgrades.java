@@ -1,6 +1,7 @@
 package com.titammods.hephaestus_tools.table;
 
 import com.titammods.hephaestus_tools.registry.ModItems;
+import com.titammods.hephaestus_tools.tables.menu.WorkbenchMenu;
 import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
 import com.titammods.hephaestus_tools.tools.modifier.ModifierEffects;
 import com.titammods.hephaestus_tools.tools.nbt.ToolConstructionData;
@@ -25,6 +26,21 @@ public final class ToolUpgrades {
 
     public static final List<ToolUpgrade> REGISTRY = new ArrayList<>();
     public static final int MAX_MODIFIER_SLOTS = 5;
+    public static final int[] SLOT_UNLOCK_LEVEL = {0, 0, 10, 20, 30};
+
+    public static int unlockedSlots(ItemStack tool) {
+        int lvl = ToolXp.getLevel(tool), n = 0;
+        for (int need : SLOT_UNLOCK_LEVEL) if (lvl >= need) n++;
+        return Math.min(MAX_MODIFIER_SLOTS, Math.max(n, usedSlots(tool)));
+    }
+
+    public static int unlockLevel(int slotIndex) {
+        return SLOT_UNLOCK_LEVEL[Math.max(0, Math.min(slotIndex, SLOT_UNLOCK_LEVEL.length - 1))];
+    }
+
+    public static boolean slotLocked(ItemStack tool, ToolUpgrade up) {
+        return currentLevel(tool, up) == 0 && usedSlots(tool) >= unlockedSlots(tool);
+    }
 
     private static final Map<String, Set<String>> INCOMPATIBLE = Map.of(
             "silk_touch", Set.of("fortune", "looting"),
@@ -129,30 +145,63 @@ public final class ToolUpgrades {
             ItemStack s = inv.getItem(i);
             if (!s.isEmpty() && s.getItem() == item) n += s.getCount();
         }
+        if (p.containerMenu instanceof WorkbenchMenu m) {
+            ItemStack staged = m.input(0);
+            if (!staged.isEmpty() && staged.getItem() == item) n += staged.getCount();
+            ItemStack held = m.getCarried();
+            if (!held.isEmpty() && held.getItem() == item) n += held.getCount();
+        }
         return n;
     }
 
+    public static int stagedCount(Player p, Item item) {
+        if (p != null && p.containerMenu instanceof WorkbenchMenu m) {
+            ItemStack staged = m.input(0);
+            if (!staged.isEmpty() && staged.getItem() == item) return staged.getCount();
+        }
+        return 0;
+    }
+
     public static boolean canApply(Player p, ItemStack tool, ToolUpgrade up) {
+        return check(p, tool, up, false);
+    }
+
+    public static boolean canAfford(Player p, ItemStack tool, ToolUpgrade up) {
+        return check(p, tool, up, true);
+    }
+
+    private static boolean check(Player p, ItemStack tool, ToolUpgrade up, boolean loose) {
         if (p == null || !(tool.getItem() instanceof ModifiableItem) || !ToolStack.isInitialized(tool)
                 || tool.getCount() != 1 || !availableFor(tool.getItem()).contains(up)) return false;
         if (hasIncompatible(tool, up)) return false;
         int lvl = currentLevel(tool, up);
         if (lvl >= up.maxLevel()) return false;
-        if (lvl == 0 && usedSlots(tool) >= MAX_MODIFIER_SLOTS) return false;
-        if (p.getAbilities().instabuild) return true;
-        return countIn(p, up.costItem()) >= up.costFor(lvl + 1);
+        if (lvl == 0 && usedSlots(tool) >= unlockedSlots(tool)) return false;
+        boolean bench = p.containerMenu instanceof WorkbenchMenu;
+        if (!bench && p.getAbilities().instabuild) return true;
+        int have = loose || !bench ? countIn(p, up.costItem()) : stagedCount(p, up.costItem());
+        return have >= up.costFor(lvl + 1);
     }
 
     public static boolean apply(Player p, ItemStack tool, ToolUpgrade up) {
         if (!canApply(p, tool, up)) return false;
         int next = currentLevel(tool, up) + 1;
-        if (!p.getAbilities().instabuild) consume(p, up.costItem(), up.costFor(next));
+        if (p.containerMenu instanceof WorkbenchMenu || !p.getAbilities().instabuild) consume(p, up.costItem(), up.costFor(next));
         ToolStack.addModifier(tool, new ToolConstructionData.ModifierEntry(up.id(), next));
         ToolStack.recalculate(tool);
         return true;
     }
 
     private static void consume(Player p, Item item, int amount) {
+        if (p.containerMenu instanceof WorkbenchMenu m) {
+            ItemStack staged = m.input(0);
+            if (!staged.isEmpty() && staged.getItem() == item) {
+                ItemStack rest = staged.copy();
+                rest.shrink(Math.min(amount, staged.getCount()));
+                m.getBlockEntity().getInputSlots().setStackInSlot(0, rest);
+            }
+            return;
+        }
         var inv = p.getInventory();
         int remaining = amount;
         for (int i = 0; i < inv.getContainerSize() && remaining > 0; i++) {

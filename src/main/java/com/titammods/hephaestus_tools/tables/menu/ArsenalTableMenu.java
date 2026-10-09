@@ -17,6 +17,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.DataSlot;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -33,16 +34,20 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
     public static final int MASTERY_SELECT_BASE = 300;
     public static final int REPAIR_DIVISOR = 4;
 
-    private int activeTab = 0;
-    private final ArsenalTableBlockEntity blockEntity;
-    private int selectedTool = 0;
+    protected int activeTab = 0;
+    protected final ArsenalTableBlockEntity blockEntity;
+    protected int selectedTool = 0;
 
     public ArsenalTableMenu(int id, Inventory inv, ArsenalTableBlockEntity be) {
-        super(ModMenus.ARSENAL_TABLE.get(), id);
+        this(ModMenus.ARSENAL_TABLE.get(), id, inv, be);
+    }
+
+    protected ArsenalTableMenu(MenuType<?> type, int id, Inventory inv, ArsenalTableBlockEntity be) {
+        super(type, id);
         blockEntity = be;
         ToolAssembly.init();
         addSlot(new SlotItemHandler(be.getUpgradeSlot(), 0, 112, 56) {
-            @Override public boolean isActive() { return activeTab != 0; }
+            @Override public boolean isActive() { return activeTab != 0 && slotsVisible(); }
             @Override public boolean mayPlace(ItemStack s) {
                 return isActive() && s.getItem() instanceof ModifiableItem && ToolStack.isInitialized(s);
             }
@@ -53,23 +58,26 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
             addSlot(new SlotItemHandler(be.getInputSlots(), i,
                     positions[i][0] + ArsenalTableLayout.SLOT_ITEM_INSET,
                     positions[i][1] + ArsenalTableLayout.SLOT_ITEM_INSET_Y) {
-                @Override public boolean isActive() { return activeTab == 0 && (isRepair() ? part == 0 : part < parts().size()); }
-                @Override public boolean mayPlace(ItemStack s) { return isActive() && accepts(part, s); }
+                @Override public boolean isActive() { return slotsVisible() && inputActive(part); }
+                @Override public boolean mayPlace(ItemStack s) { return isActive() && inputAccepts(part, s); }
+                @Override public int getMaxStackSize() { return inputLimit(part); }
+                @Override public int getMaxStackSize(ItemStack s) { return inputLimit(part); }
             });
         }
         addSlot(new SlotItemHandler(be.getOutputSlot(), 0,
                 ArsenalTableLayout.OUTPUT_X + ArsenalTableLayout.OUTPUT_ITEM_INSET,
                 ArsenalTableLayout.OUTPUT_Y + ArsenalTableLayout.OUTPUT_ITEM_INSET) {
-            @Override public boolean isActive() { return activeTab == 0; }
+            @Override public boolean isActive() { return activeTab == 0 && slotsVisible(); }
             @Override public boolean mayPlace(ItemStack s) {
                 return isActive() && getItem().isEmpty() && s.getItem() instanceof ModifiableItem && ToolStack.isInitialized(s);
             }
         });
         for (int row = 0; row < 3; row++) for (int col = 0; col < 9; col++)
-            addSlot(new Slot(inv, col + row * 9 + 9, ArsenalTableLayout.INV_X + col * 18,
-                    ArsenalTableLayout.INV_Y + row * 18));
+            addSlot(inventorySlot(inv, col + row * 9 + 9, ArsenalTableLayout.INV_X + col * 18,
+                    ArsenalTableLayout.INV_Y + row * 18, false));
         for (int col = 0; col < 9; col++)
-            addSlot(new Slot(inv, col, ArsenalTableLayout.INV_X + col * 18, ArsenalTableLayout.INV_Y + 58));
+            addSlot(inventorySlot(inv, col, ArsenalTableLayout.INV_X + col * 18, ArsenalTableLayout.INV_Y + 58, true));
+        selectedTool = initialSelection(inv.player);
         addDataSlot(new DataSlot() {
             @Override public int get() { return selectedTool; }
             @Override public void set(int value) { selectedTool = value; }
@@ -78,6 +86,34 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
             @Override public int get() { return activeTab; }
             @Override public void set(int value) { activeTab = value; }
         });
+    }
+
+    protected Slot inventorySlot(Inventory inv, int index, int x, int y, boolean hotbar) {
+        return new Slot(inv, index, x, y);
+    }
+
+    protected int initialSelection(Player player) {
+        return 0;
+    }
+
+    protected boolean slotsVisible() {
+        return true;
+    }
+
+    protected boolean inputActive(int part) {
+        return activeTab == 0 && (isRepair() ? part == 0 : part < parts().size());
+    }
+
+    protected boolean inputAccepts(int part, ItemStack stack) {
+        return accepts(part, stack);
+    }
+
+    protected int inputLimit(int part) {
+        return 1;
+    }
+
+    protected int quickMoveTabEnd() {
+        return 1;
     }
 
     public int getActiveTab() { return activeTab; }
@@ -98,7 +134,13 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
 
     public ItemStack output() { return slots.get(5).getItem(); }
 
-    private boolean accepts(int part, ItemStack stack) {
+    public boolean isRepairMaterial(ItemStack stack) {
+        if (stack.isEmpty() || !ToolStack.isInitialized(tool())) return false;
+        var material = MaterialManager.getInstance().getMaterial(ToolStack.getMaterial(tool(), 0));
+        return material != null && material.ingredient().test(stack);
+    }
+
+    protected boolean accepts(int part, ItemStack stack) {
         if (stack.isEmpty()) return false;
         if (isRepair()) {
             if (part != 0 || !ToolStack.isInitialized(tool())) return false;
@@ -111,7 +153,7 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
                 && MaterialManager.getInstance().getMaterial(p.getMaterial(stack)) != null;
     }
 
-    private int swapIndexFor(ItemStack tool, ItemStack stack) {
+    protected int swapIndexFor(ItemStack tool, ItemStack stack) {
         if (tool.isEmpty() || stack.isEmpty()) return -1;
         if (!(stack.getItem() instanceof ToolPartItem incoming)) return -1;
         MaterialId material = incoming.getMaterial(stack);
@@ -127,7 +169,7 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
         return -1;
     }
 
-    private ItemStack swapResult(ItemStack tool, ItemStack stack) {
+    protected ItemStack swapResult(ItemStack tool, ItemStack stack) {
         int index = swapIndexFor(tool, stack);
         if (index < 0) return ItemStack.EMPTY;
 
@@ -223,7 +265,7 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
         return false;
     }
 
-    private void returnSlot(Player player, int index) {
+    protected void returnSlot(Player player, int index) {
         Slot slot = slots.get(index);
         ItemStack old = slot.remove(slot.getItem().getCount());
         if (!old.isEmpty() && !player.getInventory().add(old)) player.drop(old, false);
@@ -233,6 +275,12 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
     public void clicked(int slotId, int button, ContainerInput type, Player player) {
         if (!stillValid(player)) return;
         if (slotId >= 0 && slotId < MACHINE_SLOTS && !slots.get(slotId).isActive()) return;
+        if (!beforeClick(slotId, button, type, player)) return;
+        super.clicked(slotId, button, type, player);
+        afterClick(slotId, button, type, player);
+    }
+
+    protected boolean beforeClick(int slotId, int button, ContainerInput type, Player player) {
         if (slotId == 5 && output().isEmpty()) {
             ItemStack result = preview();
             boolean pickup = type == ContainerInput.PICKUP && (button == 0 || button == 1)
@@ -250,7 +298,10 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
                 blockEntity.setChanged();
             }
         }
-        super.clicked(slotId, button, type, player);
+        return true;
+    }
+
+    protected void afterClick(int slotId, int button, ContainerInput type, Player player) {
         if (slotId == 1 && type == ContainerInput.PICKUP && isRepair()
                 && !attemptPartSwap(player)) attemptRepair();
     }
@@ -318,7 +369,7 @@ public class ArsenalTableMenu extends AbstractContainerMenu {
         if (index < MACHINE_SLOTS) {
             if (!moveItemStackTo(stack, MACHINE_SLOTS, slots.size(), true)) return ItemStack.EMPTY;
         } else if (!(activeTab == 0 ? moveItemStackTo(stack, 1, 6, false)
-                : moveItemStackTo(stack, 0, 1, false))) {
+                : moveItemStackTo(stack, 0, quickMoveTabEnd(), false))) {
             int hotbar = MACHINE_SLOTS + 27;
             if (index < hotbar ? !moveItemStackTo(stack, hotbar, slots.size(), false)
                     : !moveItemStackTo(stack, MACHINE_SLOTS, hotbar, false)) return ItemStack.EMPTY;

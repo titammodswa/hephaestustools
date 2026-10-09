@@ -33,7 +33,6 @@ public class ModBlockDataProvider implements DataProvider {
         JsonArray conditions = new JsonArray();
         conditions.add(condition);
 
-        // Either targeted half drops the item; paired removal does not roll loot.
         JsonObject pool = new JsonObject();
         pool.addProperty("rolls", 1);
         pool.add("entries", entries);

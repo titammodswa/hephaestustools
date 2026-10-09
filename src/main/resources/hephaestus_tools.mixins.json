@@ -10,7 +10,12 @@
     "ServerPlayerGameModeMixin",
     "LivingEntityMixin"
   ],
-  "client": [],
+  "client": [
+    "client.CameraMixin",
+    "client.HumanoidModelMixin",
+    "client.SlotAccessor",
+    "client.ItemInHandLayerMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

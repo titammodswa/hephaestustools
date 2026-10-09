@@ -1,36 +1,74 @@
 {
   "model": {
-    "type": "minecraft:composite",
-    "models": [
-      {
-        "type": "minecraft:model",
-        "model": "hephaestus_tools:item/tool/cleaver",
-        "tints": [
-          {
-            "type": "hephaestus_tools:tool_material",
-            "index": 0
-          },
-          {
-            "type": "hephaestus_tools:tool_material",
-            "index": 1
-          },
-          {
-            "type": "hephaestus_tools:tool_material",
-            "index": 2
-          },
-          {
-            "type": "hephaestus_tools:tool_material",
-            "index": 3
+    "type": "minecraft:condition",
+    "on_false": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:model",
+          "model": "hephaestus_tools:item/tool/cleaver",
+          "tints": [
+            {
+              "type": "hephaestus_tools:tool_material",
+              "index": 0
+            },
+            {
+              "type": "hephaestus_tools:tool_material",
+              "index": 1
+            },
+            {
+              "type": "hephaestus_tools:tool_material",
+              "index": 2
+            },
+            {
+              "type": "hephaestus_tools:tool_material",
+              "index": 3
+            }
+          ]
+        },
+        {
+          "type": "minecraft:special",
+          "base": "hephaestus_tools:item/tool/cleaver_overlay",
+          "model": {
+            "type": "hephaestus_tools:tool_modifiers"
           }
-        ]
-      },
-      {
-        "type": "minecraft:special",
-        "base": "hephaestus_tools:item/tool/cleaver_overlay",
-        "model": {
-          "type": "hephaestus_tools:tool_modifiers"
         }
-      }
-    ]
+      ]
+    },
+    "on_true": {
+      "type": "minecraft:composite",
+      "models": [
+        {
+          "type": "minecraft:model",
+          "model": "hephaestus_tools:item/tool/workbench/cleaver",
+          "tints": [
+            {
+              "type": "hephaestus_tools:tool_material",
+              "index": 0
+            },
+            {
+              "type": "hephaestus_tools:tool_material",
+              "index": 1
+            },
+            {
+              "type": "hephaestus_tools:tool_material",
+              "index": 2
+            },
+            {
+              "type": "hephaestus_tools:tool_material",
+              "index": 3
+            }
+          ]
+        },
+        {
+          "type": "minecraft:special",
+          "base": "hephaestus_tools:item/tool/cleaver_overlay",
+          "model": {
+            "type": "hephaestus_tools:tool_modifiers"
+          }
+        }
+      ]
+    },
+    "property": "hephaestus_tools:workbench_style"
   }
 }

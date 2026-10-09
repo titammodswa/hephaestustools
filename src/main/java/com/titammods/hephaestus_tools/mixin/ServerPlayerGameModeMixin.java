@@ -24,7 +24,6 @@ public abstract class ServerPlayerGameModeMixin {
         ItemStack held = player.getMainHandItem();
         var extras = HammerAoeBreakHandler.extraBlocks(player, pos);
         boolean removed = original.call(pos, state, canHarvest, tool);
-        // This hook runs only after break cancellation and an actual successful removal.
         if (removed && player.getMainHandItem() == held) {
             ToolXpEvents.afterBreak(player, state);
             PlayerBlockBreaks.afterBreak(player, pos, state, extras);

@@ -71,6 +71,7 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
     private static final Identifier BG = rl("build_screen.png"), ATLAS = rl("icons_atlas.png"),
             LATERAL = rl("lateral_tab.png"), COLLAPSE = rl("lateral_collapse.png");
     private static final Identifier MODIFY = rl("modify_screen.png"), MASTERY = rl("mastery_patch_screen.png");
+    private static final Identifier LOCK_SPRITE = Identifier.fromNamespaceAndPath(HephaestusTools.MOD_ID, "workbench/icon_lock");
 
     private static final int LATERAL_LEFT_X = 16, LATERAL_RIGHT_X = 288, LATERAL_Y = 42;
     private static final int LATERAL_W = 80, LATERAL_TOOLS_H = 108;
@@ -596,14 +597,24 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
                 : null;
     }
 
+    private boolean slotLocked(int i) {
+        return i >= installedModifiers().size() && i >= ToolUpgrades.unlockedSlots(menu.tool());
+    }
+
     private void drawModifierSlots(GuiGraphicsExtractor g) {
         var installed = installedModifiers();
         int max = ToolUpgrades.MAX_MODIFIER_SLOTS;
-        text(g, tr("slots_used").copy().append(" " + installed.size() + " / " + max), 300, 67, 74, .65f, C_VALUE);
+        int unlocked = ToolUpgrades.unlockedSlots(menu.tool());
+        text(g, tr("slots_used").copy().append(" " + installed.size() + " / " + unlocked), 300, 67, 74, .65f, C_VALUE);
         for (int i = 0; i < Math.max(max, installed.size()); i++) {
             int x = 300 + (i % 5) * 15, y = 82 + (i / 5) * 17;
             if (y + 13 > LATERAL_Y + statsHeight() - 16) break;
             atlas(g, new int[]{114, 97, 12, 12}, x, y, 13, 13);
+            if (slotLocked(i)) {
+                g.fill(leftPos + x + 1, topPos + y + 1, leftPos + x + 12, topPos + y + 12, 0x90000000);
+                g.blitSprite(RenderPipelines.GUI_TEXTURED, LOCK_SPRITE, leftPos + x + 2, topPos + y + 2, 9, 9);
+                continue;
+            }
             if (i < installed.size()) {
                 var texture = installedIcon(installed.get(i).id());
                 if (texture != null)
@@ -636,8 +647,11 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
                 else if (owned < up.costFor(level + 1)) lines.addAll(font.split(
                         Component.translatable("gui.hephaestus_tools.build.materials_missing", up.costFor(level + 1) - owned)
                                 .withStyle(ChatFormatting.RED), 180));
-                if (level == 0 && ToolUpgrades.usedSlots(menu.tool()) >= ToolUpgrades.MAX_MODIFIER_SLOTS)
+                if (level == 0 && ToolUpgrades.usedSlots(menu.tool()) >= ToolUpgrades.unlockedSlots(menu.tool())) {
                     lines.addAll(font.split(tr("no_modifier_slots").copy().withStyle(ChatFormatting.RED), 180));
+                    if (ToolUpgrades.unlockedSlots(menu.tool()) < ToolUpgrades.MAX_MODIFIER_SLOTS)
+                        lines.addAll(font.split(tr("no_free_slot").copy().withStyle(ChatFormatting.RED), 180));
+                }
                 if (ToolUpgrades.canApply(minecraft.player, menu.tool(), up))
                     lines.addAll(font.split(tr("ready_to_apply").copy().withStyle(ChatFormatting.GREEN), 180));
             } else lines.add(tr("max_level").getVisualOrderText());
@@ -730,6 +744,16 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
         }
         if (menu.getActiveTab() == 1) {
             var installed = installedModifiers();
+            for (int i = installed.size(); i < ToolUpgrades.MAX_MODIFIER_SLOTS; i++) {
+                int y = 82 + (i / 5) * 17;
+                if (y + 13 > LATERAL_Y + statsHeight() - 16) break;
+                if (slotLocked(i) && in(mx, my, 300 + (i % 5) * 15, y, 13, 13)) {
+                    g.setComponentTooltipForNextFrame(font, List.of(tr("locked_title").copy().withStyle(ChatFormatting.GOLD),
+                            Component.translatable("gui.hephaestus_tools.build.slot_locked", ToolUpgrades.unlockLevel(i)),
+                            tr("slots_unlock").copy().withStyle(ChatFormatting.GRAY)), mx, my);
+                    return;
+                }
+            }
             for (int i = 0; i < installed.size(); i++) {
                 int y = 82 + (i / 5) * 17;
                 if (y + 13 > LATERAL_Y + statsHeight() - 16) break;

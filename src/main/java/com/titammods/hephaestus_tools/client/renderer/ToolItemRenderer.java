@@ -68,8 +68,28 @@ public class ToolItemRenderer implements SpecialModelRenderer<List<Identifier>> 
                     "item/tool/cleaver/guard", "item/tool/cleaver/handle"))
     );
 
+    private static final Map<String, List<String>> WORKBENCH_LAYERS = Map.ofEntries(
+            Map.entry("hand_axe", List.of(
+                    "item/tool/workbench/hand_axe/head", "item/tool/pickaxe/handle", "item/tool/workbench/hand_axe/binding")),
+            Map.entry("cleaver", List.of(
+                    "item/tool/workbench/cleaver/head", "item/tool/cleaver/shield",
+                    "item/tool/cleaver/guard", "item/tool/cleaver/handle"))
+    );
+
+    public static List<String> workbenchLayersFor(Item item) {
+        Identifier id = BuiltInRegistries.ITEM.getKey(item);
+        if (id == null) return null;
+        List<String> layers = WORKBENCH_LAYERS.get(id.getPath());
+        return layers != null ? layers : TOOL_LAYERS.get(id.getPath());
+    }
+
     public static Map<String, List<String>> toolLayers() {
         return TOOL_LAYERS;
+    }
+
+    public static int layerCount(Item item) {
+        List<String> layers = layersFor(item);
+        return layers == null ? 0 : layers.size();
     }
 
     public static List<String> layersFor(Item item) {
@@ -99,6 +119,24 @@ public class ToolItemRenderer implements SpecialModelRenderer<List<Identifier>> 
         for (Identifier overlay : modifierTextures(stack)) {
             graphics.blit(RenderPipelines.GUI_TEXTURED, overlay, x, y,
                     0f, 0f, size, size, 16, 16, 16, 16, 0x00FFFFFF | alphaBits);
+        }
+    }
+
+    public static void renderGuiPreviewTinted(GuiGraphicsExtractor graphics,
+                                              ItemStack stack, int x, int y, int size, int argb) {
+        List<String> layers = workbenchLayersFor(stack.getItem());
+        if (layers == null) return;
+        int ta = argb >>> 24 & 255, tr = argb >> 16 & 255, tg = argb >> 8 & 255, tb = argb & 255;
+        for (int i = 0; i < layers.size(); i++) {
+            int base = ToolColorHandler.INSTANCE.getColor(stack, i);
+            int r = (base >> 16 & 255) * tr / 255, g = (base >> 8 & 255) * tg / 255, b = (base & 255) * tb / 255;
+            int color = ta << 24 | r << 16 | g << 8 | b;
+            graphics.blit(RenderPipelines.GUI_TEXTURED, png(layers.get(i)), x, y,
+                    0f, 0f, size, size, 16, 16, 16, 16, color);
+        }
+        for (Identifier overlay : modifierTextures(stack)) {
+            graphics.blit(RenderPipelines.GUI_TEXTURED, overlay, x, y,
+                    0f, 0f, size, size, 16, 16, 16, 16, argb);
         }
     }
 

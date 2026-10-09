@@ -2,7 +2,9 @@ package com.titammods.hephaestus_tools.tables.blockentity;
 
 import com.mojang.serialization.Codec;
 import com.titammods.hephaestus_tools.registry.ModBlocks;
+import com.titammods.hephaestus_tools.table.TableStyle;
 import com.titammods.hephaestus_tools.tables.menu.ArsenalTableMenu;
+import com.titammods.hephaestus_tools.tables.menu.WorkbenchMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -42,7 +44,7 @@ public class ArsenalTableBlockEntity extends BlockEntity implements MenuProvider
     };
     private final ItemStackHandler inputSlots = new ItemStackHandler(4) {
         @Override protected void onContentsChanged(int slot) { setChanged(); syncToClient(); }
-        @Override public int getSlotLimit(int slot) { return 1; }
+        @Override public int getSlotLimit(int slot) { return slot == 0 ? 99 : 1; }
     };
     private final ItemStackHandler outputSlot = new ItemStackHandler(1) {
         @Override protected void onContentsChanged(int slot) { setChanged(); syncToClient(); }
@@ -89,6 +91,7 @@ public class ArsenalTableBlockEntity extends BlockEntity implements MenuProvider
     @Nullable
     @Override
     public AbstractContainerMenu createMenu(int containerId, Inventory inv, Player player) {
+        if (TableStyle.isModern(player)) return new WorkbenchMenu(containerId, inv, this);
         return new ArsenalTableMenu(containerId, inv, this);
     }
 

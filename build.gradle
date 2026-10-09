@@ -100,6 +100,15 @@ repositories {
         name = "ModMaven"
         url = "https://modmaven.dev/"
     }
+    maven {
+        name = "RedlanceMinecraft"
+        url = "https://repo.redlance.org/public"
+        content {
+            includeGroupByRegex "com\\.zigythebird(\\..*)?"
+            includeGroupByRegex "org\\.redlance(\\..*)?"
+        }
+    }
+    mavenCentral()
 }
 
 dependencies {
@@ -111,6 +120,15 @@ dependencies {
 
     implementation "curse.maven:ftb-materials-1124942:8500413"
     implementation "curse.maven:ftb-library-forge-404465:8858835"
+
+    implementation("com.zigythebird.playeranim:PlayerAnimationLibNeo:${pal_version}") {
+        exclude group: "com.google.code.gson", module: "gson"
+        exclude group: "io.netty"
+        exclude group: "org.slf4j"
+        exclude group: "it.unimi.dsi"
+        exclude group: "org.joml"
+        exclude group: "org.jetbrains", module: "annotations"
+    }
 
 }
 
