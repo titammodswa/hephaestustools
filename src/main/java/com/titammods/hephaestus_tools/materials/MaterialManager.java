@@ -10,6 +10,7 @@ import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.neoforge.common.conditions.ICondition;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
@@ -32,6 +33,7 @@ public final class MaterialManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(MaterialManager.class);
     private static final String FOLDER = "hephaestus_tools/materials";
     private static final String SUFFIX = ".json";
+    private static final String CONDITIONS_KEY = "neoforge:conditions";
 
     public static final Identifier LISTENER_ID =
             Identifier.fromNamespaceAndPath(HephaestusTools.MOD_ID, "materials");
@@ -112,12 +114,17 @@ public final class MaterialManager {
         public void onResourceManagerReload(ResourceManager manager) {
             Map<MaterialId, Material> loaded = new LinkedHashMap<>();
             int failed = 0;
+            int skipped = 0;
 
             for (Map.Entry<Identifier, Resource> entry :
                     manager.listResources(FOLDER, path -> path.getPath().endsWith(SUFFIX)).entrySet()) {
                 Identifier file = entry.getKey();
                 try (Reader reader = entry.getValue().openAsReader()) {
                     JsonElement json = JsonParser.parseReader(reader);
+                    if (!conditionsMet(json)) {
+                        skipped++;
+                        continue;
+                    }
                     Material material = Material.CODEC.parse(JsonOps.INSTANCE, json)
                             .getOrThrow(msg -> new IllegalStateException(msg));
                     loaded.put(material.id(), material);
@@ -128,7 +135,17 @@ public final class MaterialManager {
             }
 
             INSTANCE.replaceAll(loaded);
-            LOGGER.info("[HephaestusTools] Materiais carregados: {} OK, {} falhas", loaded.size(), failed);
+            LOGGER.info("[HephaestusTools] Materiais carregados: {} OK, {} falhas, {} ignorados por condicao", loaded.size(), failed, skipped);
+        }
+
+        private static boolean conditionsMet(JsonElement json) {
+            if (!json.isJsonObject() || !json.getAsJsonObject().has(CONDITIONS_KEY)) return true;
+            List<ICondition> conditions = ICondition.LIST_CODEC.parse(JsonOps.INSTANCE, json.getAsJsonObject().get(CONDITIONS_KEY))
+                    .getOrThrow(msg -> new IllegalStateException(msg));
+            for (ICondition condition : conditions) {
+                if (!condition.test(ICondition.IContext.EMPTY)) return false;
+            }
+            return true;
         }
 
         @Override

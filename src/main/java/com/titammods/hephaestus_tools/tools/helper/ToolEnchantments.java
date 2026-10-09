@@ -61,7 +61,15 @@ public final class ToolEnchantments {
     }
 
     public static boolean isMergedLine(Component line) {
-        if (!(line.getContents() instanceof TranslatableContents contents)) return false;
+        if (isMergedKey(line)) return true;
+        for (Component sibling : line.getSiblings()) {
+            if (isMergedLine(sibling)) return true;
+        }
+        return false;
+    }
+
+    private static boolean isMergedKey(Component part) {
+        if (!(part.getContents() instanceof TranslatableContents contents)) return false;
         for (ResourceKey<Enchantment> enchantment : MERGED.keySet()) {
             String name = enchantment.identifier().toLanguageKey("enchantment");
             if (contents.getKey().equals(name) || contents.getKey().equals(name + ".desc")) return true;
