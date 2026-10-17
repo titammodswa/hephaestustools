@@ -1,0 +1,14 @@
+{
+  "effects": [
+    {
+      "type": "hephaestus_tools:stat_multiply",
+      "amount": 0.2,
+      "stat": "attack_damage"
+    },
+    {
+      "type": "hephaestus_tools:stat_add",
+      "amount": -0.4,
+      "stat": "attack_speed"
+    }
+  ]
+}

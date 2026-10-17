@@ -1,7 +1,10 @@
 package com.titammods.hephaestus_tools.tools.nbt;
 
+import com.titammods.hephaestus_tools.api.event.ToolRecalculatedEvent;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
+import com.titammods.hephaestus_tools.materials.tier.TierManager;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
 import com.titammods.hephaestus_tools.registry.ModComponents;
 import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
 import com.titammods.hephaestus_tools.tools.item.ToolCategory;
@@ -10,6 +13,7 @@ import com.titammods.hephaestus_tools.tools.stat.HarvestTier;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.registries.VanillaRegistries;
 import net.minecraft.tags.BlockTags;
@@ -23,10 +27,12 @@ import net.minecraft.world.item.component.Tool;
 import net.minecraft.world.item.enchantment.Enchantable;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.util.Lazy;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -130,9 +136,28 @@ public final class ToolStack {
     public static void refreshIfStale(ItemStack stack) {
         ToolPropertiesData data = stack.get(ModComponents.TOOL_PROPERTIES.get());
         if (data == null || !isInitialized(stack)) return;
-        MaterialManager.getInstance().fingerprint(getMaterials(stack)).ifPresent(hash -> {
-            if (hash != data.materialsHash()) recalculate(stack);
-        });
+        OptionalInt hash = fingerprint(stack.getItem(), getConstruction(stack));
+        if (hash.isPresent() && hash.getAsInt() != data.materialsHash()) recalculate(stack);
+    }
+
+    public static void refresh(ItemStack stack) {
+        if (!(stack.getItem() instanceof ModifiableItem) || !isInitialized(stack)) return;
+        if (stack.get(ModComponents.TOOL_PROPERTIES.get()) == null) recalculate(stack);
+        else refreshIfStale(stack);
+    }
+
+    private static OptionalInt fingerprint(Item tool, ToolConstructionData construction) {
+        List<MaterialId> materials = construction.materials();
+        OptionalInt hash = MaterialManager.getInstance().fingerprint(materials);
+        if (hash.isEmpty()) return hash;
+        int value = 31 * hash.getAsInt() + ToolTraits.fingerprint(tool, materials);
+        value = 31 * value + TierManager.getInstance().fingerprint();
+        value = 31 * value + BuiltInRegistries.ITEM.getKey(tool).hashCode();
+        for (ToolConstructionData.ModifierEntry modifier : construction.modifiers()) {
+            value = 31 * value + modifier.id().hashCode();
+            value = 31 * value + modifier.level();
+        }
+        return OptionalInt.of(value);
     }
 
     public static boolean isBroken(ItemStack stack) {
@@ -144,7 +169,7 @@ public final class ToolStack {
         if (!construction.isInitialized()) return;
 
         ToolPropertiesData properties = ToolBuildHandler.calculateProperties(stack, construction)
-                .withMaterialsHash(MaterialManager.getInstance().fingerprint(construction.materials()).orElse(0));
+                .withMaterialsHash(fingerprint(stack.getItem(), construction).orElse(0));
 
         stack.set(ModComponents.TOOL_PROPERTIES.get(), properties);
 
@@ -159,6 +184,7 @@ public final class ToolStack {
         stack.set(DataComponents.ENCHANTABLE,
                 new Enchantable(
                         Math.max(1, properties.getEnchantability())));
+        NeoForge.EVENT_BUS.post(new ToolRecalculatedEvent(stack));
     }
 
     private static void updateAttributeModifiers(ItemStack stack, ToolPropertiesData properties) {

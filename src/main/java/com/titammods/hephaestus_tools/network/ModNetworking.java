@@ -17,6 +17,8 @@ public class ModNetworking {
                 SyncMaterialsPayload.STREAM_CODEC,
                 SyncMaterialsPayload::handle
         );
+        reg.playToClient(SyncTraitsPayload.TYPE, SyncTraitsPayload.STREAM_CODEC, SyncTraitsPayload::handle);
+        reg.playToClient(SyncTiersPayload.TYPE, SyncTiersPayload.STREAM_CODEC, SyncTiersPayload::handle);
         reg.playToServer(TableStylePayload.TYPE, TableStylePayload.STREAM_CODEC, TableStylePayload::handle);
         reg.playToServer(CraftAnimPayload.TYPE, CraftAnimPayload.STREAM_CODEC, CraftAnimPayload::handle);
         reg.playToClient(RemoteCraftPayload.TYPE, RemoteCraftPayload.STREAM_CODEC, RemoteCraftPayload::handle);

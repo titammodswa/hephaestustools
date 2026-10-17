@@ -1,0 +1,20 @@
+{
+  "effects": [
+    {
+      "type": "hephaestus_tools:break_speed",
+      "amount": 4.0,
+      "scale": {
+        "type": "hephaestus_tools:cold",
+        "below": 0.75
+      }
+    },
+    {
+      "type": "hephaestus_tools:bonus_damage",
+      "amount": 1.5,
+      "scale": {
+        "type": "hephaestus_tools:cold",
+        "below": 0.75
+      }
+    }
+  ]
+}

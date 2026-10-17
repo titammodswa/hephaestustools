@@ -1,0 +1,11 @@
+{
+  "effects": [
+    {
+      "type": "hephaestus_tools:bonus_damage",
+      "amount": 2.5,
+      "condition": {
+        "type": "hephaestus_tools:target_wet"
+      }
+    }
+  ]
+}

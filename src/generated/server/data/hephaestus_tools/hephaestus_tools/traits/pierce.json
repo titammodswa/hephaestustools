@@ -1,0 +1,12 @@
+{
+  "effects": [
+    {
+      "type": "hephaestus_tools:bonus_damage",
+      "amount": 0.2,
+      "max": 4.0,
+      "scale": {
+        "type": "hephaestus_tools:target_armor"
+      }
+    }
+  ]
+}

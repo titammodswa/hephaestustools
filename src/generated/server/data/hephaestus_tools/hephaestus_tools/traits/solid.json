@@ -1,0 +1,9 @@
+{
+  "effects": [
+    {
+      "type": "hephaestus_tools:stat_multiply",
+      "amount": 0.25,
+      "stat": "durability"
+    }
+  ]
+}

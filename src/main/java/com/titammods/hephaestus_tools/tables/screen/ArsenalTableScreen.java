@@ -2,8 +2,7 @@ package com.titammods.hephaestus_tools.tables.screen;
 
 import com.titammods.hephaestus_tools.HephaestusTools;
 import com.titammods.hephaestus_tools.client.renderer.ToolItemRenderer;
-import com.titammods.hephaestus_tools.materials.MaterialManager;
-import com.titammods.hephaestus_tools.materials.trait.MaterialTrait;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
 import com.titammods.hephaestus_tools.registry.ModItems;
 import com.titammods.hephaestus_tools.table.ArsenalTableLayout;
 import com.titammods.hephaestus_tools.table.MasteryLevel;
@@ -14,6 +13,7 @@ import com.titammods.hephaestus_tools.table.ToolUpgrades;
 import com.titammods.hephaestus_tools.table.ToolXp;
 import com.titammods.hephaestus_tools.tables.menu.ArsenalTableMenu;
 import com.titammods.hephaestus_tools.tools.helper.ToolBuildHandler;
+import com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder;
 import com.titammods.hephaestus_tools.tools.nbt.ToolConstructionData;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import net.minecraft.ChatFormatting;
@@ -306,7 +306,7 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
         }
         String[] names = {"durability", "mining_speed", "harvest", "attack_damage", "attack_speed"};
         String[] values = {String.valueOf(ToolStack.getDurability(details)), fmt(ToolStack.getMiningSpeed(details)),
-                Component.translatable("tooltip.hephaestus_tools.tier." + ToolStack.getHarvestTier(details).id()).getString(),
+                Component.translatable(ToolStack.getHarvestTier(details).nameKey()).getString(),
                 fmt(ToolStack.getAttackDamage(details)), fmt(ToolStack.getAttackSpeed(details))};
         for (int i = 0; i < 5; i++) {
             int rowY = 64 + i * (menu.getActiveTab() == 0 ? 11 : 10);
@@ -322,17 +322,16 @@ public class ArsenalTableScreen extends AbstractContainerScreen<ArsenalTableMenu
         var parts = ToolBuildHandler.getToolParts(details.getItem());
         for (int i = 0; i < materials.size(); i++) {
             var mat = materials.get(i);
-            var stats = MaterialManager.getInstance().getStatsForSlot(mat, 0);
-            var trait = MaterialTrait.byId(stats.traitId());
-            if (trait.isEmpty()) continue;
-            Component traitName = Component.translatable("trait.hephaestus_tools." + trait.get().id());
-            Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
-            Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
-            traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));
-            int traitY = (menu.getActiveTab() == 0 ? 133 : 127) + (traitDetails.size() - 1) * 7;
-            int bottom = LATERAL_Y + (menu.getActiveTab() == 0 ? statsHeight() : (expandedLeftStats ? 128 : 107)) - 15;
-            if (traitDetails.size() <= 4 && traitY + Math.ceil(font.lineHeight * .52f) <= bottom)
-                text(g, traitName.copy().append(" - ").append(materialName), 300, traitY, 74, .52f, C_LABEL);
+            for (var trait : ToolTraits.ofPart(mat, ToolBuildHandler.partRole(parts, i))) {
+                Component traitName = ToolTooltipBuilder.traitName(trait);
+                Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
+                Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
+                traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));
+                int traitY = (menu.getActiveTab() == 0 ? 133 : 127) + (traitDetails.size() - 1) * 7;
+                int bottom = LATERAL_Y + (menu.getActiveTab() == 0 ? statsHeight() : (expandedLeftStats ? 128 : 107)) - 15;
+                if (traitDetails.size() <= 4 && traitY + Math.ceil(font.lineHeight * .52f) <= bottom)
+                    text(g, traitName.copy().append(" - ").append(materialName), 300, traitY, 74, .52f, C_LABEL);
+            }
         }
         if (traitDetails.isEmpty()) text(g, tr("no_traits"), 300, menu.getActiveTab() == 0 ? 133 : 127, 74, .6f, C_HINT);
     }

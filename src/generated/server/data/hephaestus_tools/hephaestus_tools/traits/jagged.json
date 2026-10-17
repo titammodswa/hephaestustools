@@ -1,0 +1,11 @@
+{
+  "effects": [
+    {
+      "type": "hephaestus_tools:bonus_damage",
+      "amount": 3.0,
+      "scale": {
+        "type": "hephaestus_tools:wear"
+      }
+    }
+  ]
+}

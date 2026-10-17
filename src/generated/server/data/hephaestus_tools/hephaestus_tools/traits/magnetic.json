@@ -1,0 +1,10 @@
+{
+  "effects": [
+    {
+      "type": "hephaestus_tools:pull_items",
+      "interval": 5,
+      "radius": 5.0,
+      "strength": 0.12
+    }
+  ]
+}

@@ -9,7 +9,7 @@ import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import com.titammods.hephaestus_tools.client.workbench.WorkbenchCraft;
 import com.titammods.hephaestus_tools.client.workbench.WorkbenchSession;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
-import com.titammods.hephaestus_tools.materials.trait.MaterialTrait;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
 import com.titammods.hephaestus_tools.mixin.client.SlotAccessor;
 import com.titammods.hephaestus_tools.table.ToolAssembly;
 import com.titammods.hephaestus_tools.table.MasteryLevel;
@@ -20,6 +20,7 @@ import com.titammods.hephaestus_tools.table.ToolUpgrades;
 import com.titammods.hephaestus_tools.table.ToolXp;
 import com.titammods.hephaestus_tools.tables.menu.WorkbenchMenu;
 import com.titammods.hephaestus_tools.tools.helper.ToolBuildHandler;
+import com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder;
 import com.titammods.hephaestus_tools.tools.nbt.ToolConstructionData;
 import com.titammods.hephaestus_tools.tools.nbt.ToolStack;
 import com.titammods.hephaestus_tools.tools.part.ToolPartItem;
@@ -32,6 +33,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
@@ -757,7 +759,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             var tier = ToolStack.getHarvestTier(details);
             inkSprite(g, spr("icon_harvest"), x, y, 8);
             text(g, tr("mines_up_to"), x + 11, y + 1, w - 70, .64f, INK2);
-            textRight(g, Component.translatable("tooltip.hephaestus_tools.tier." + tier.id()), x + w, y + 1, 60, .68f, INK);
+            textRight(g, Component.translatable(tier.nameKey()), x + w, y + 1, 60, .68f, INK);
             tip(x, y - 1, w, 11, tr("mines_up_to"), tr("help_harvest"));
             y += 15;
             y = drawSlotPips(g, x, y, w);
@@ -793,18 +795,30 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
             g.item(partStack, x, y + 1);
             Component matName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
             text(g, new ItemStack(parts.get(i)).getHoverName().copy().append(Component.literal("  ")).append(matName.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y, w - 20, .64f, INK);
-            var stats = MaterialManager.getInstance().getStatsForSlot(mat, 0);
-            var trait = MaterialTrait.byId(stats.traitId());
-            Component tn = null, td = null;
-            if (trait.isPresent()) {
-                tn = Component.translatable("trait.hephaestus_tools." + trait.get().id());
-                td = Component.translatable("trait.hephaestus_tools." + trait.get().id() + ".desc");
+            var traits = ToolTraits.ofPart(mat, ToolBuildHandler.partRole(parts, i));
+            if (traits.size() == 1) {
+                Component tn = ToolTooltipBuilder.traitName(traits.getFirst());
+                Component td = Component.translatable(ToolTraits.descriptionKey(traits.getFirst().id()));
                 text(g, tn.copy().withColor(INK_ORANGE & 0xFFFFFF).append(Component.literal("  ")).append(td.copy().withColor(INK2 & 0xFFFFFF)), x + 20, y + lineGap, w - 20, .52f, INK2);
+                tip(x, y - 1, w, pitch, partStack.getHoverName(), tn.copy().withStyle(ChatFormatting.GOLD), td, matName);
+            } else if (!traits.isEmpty()) {
+                MutableComponent names = Component.empty();
+                List<Component> lines = new ArrayList<>();
+                lines.add(partStack.getHoverName());
+                for (var trait : traits) {
+                    Component tn = ToolTooltipBuilder.traitName(trait);
+                    if (!names.getSiblings().isEmpty()) names.append(Component.literal(", "));
+                    names.append(tn.copy().withColor(INK_ORANGE & 0xFFFFFF));
+                    lines.add(tn.copy().withStyle(ChatFormatting.GOLD));
+                    lines.add(Component.translatable(ToolTraits.descriptionKey(trait.id())));
+                }
+                lines.add(matName);
+                text(g, names, x + 20, y + lineGap, w - 20, .52f, INK2);
+                tip(x, y - 1, w, pitch, lines.toArray(Component[]::new));
             } else {
                 text(g, tr("part_no_trait"), x + 20, y + lineGap, w - 20, .52f, INK3);
+                tip(x, y - 1, w, pitch, partStack.getHoverName(), matName);
             }
-            if (tn != null) tip(x, y - 1, w, pitch, partStack.getHoverName(), tn.copy().withStyle(ChatFormatting.GOLD), td, matName);
-            else tip(x, y - 1, w, pitch, partStack.getHoverName(), matName);
             y += pitch;
         }
         return y;
@@ -1746,7 +1760,7 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
     }
 
     private static ItemStack harvestIcon(com.titammods.hephaestus_tools.tools.stat.HarvestTier tier) {
-        return new ItemStack(switch (tier.id()) {
+        return new ItemStack(switch (tier.id().getPath()) {
             case "wood", "gold" -> net.minecraft.world.item.Items.COAL_ORE;
             case "stone" -> net.minecraft.world.item.Items.IRON_ORE;
             case "iron" -> net.minecraft.world.item.Items.DIAMOND_ORE;
@@ -1764,15 +1778,14 @@ public class WorkbenchScreen extends AbstractContainerScreen<WorkbenchMenu> {
         var parts = ToolBuildHandler.getToolParts(details.getItem());
         for (int i = 0; i < materials.size(); i++) {
             var mat = materials.get(i);
-            var stats = MaterialManager.getInstance().getStatsForSlot(mat, 0);
-            var trait = MaterialTrait.byId(stats.traitId());
-            if (trait.isEmpty()) continue;
-            Component traitName = Component.translatable("trait.hephaestus_tools." + trait.get().id());
-            Component traitDesc = Component.translatable("trait.hephaestus_tools." + trait.get().id() + ".desc");
-            Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
-            Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
-            traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));
-            traitRows.add(new Component[] {traitName, traitDesc, materialName});
+            for (var trait : ToolTraits.ofPart(mat, ToolBuildHandler.partRole(parts, i))) {
+                Component traitName = ToolTooltipBuilder.traitName(trait);
+                Component traitDesc = Component.translatable(ToolTraits.descriptionKey(trait.id()));
+                Component materialName = Component.translatable("material.hephaestus_tools." + mat.id().getPath());
+                Component partName = i < parts.size() ? new ItemStack(parts.get(i)).getHoverName() : Component.literal("");
+                traitDetails.add(traitName.copy().append(" - ").append(materialName).append(" (").append(partName).append(")"));
+                traitRows.add(new Component[] {traitName, traitDesc, materialName});
+            }
         }
     }
 

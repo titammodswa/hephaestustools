@@ -1,0 +1,13 @@
+{
+  "effects": [
+    {
+      "type": "hephaestus_tools:break_speed",
+      "amount": 0.004,
+      "max": 0.5,
+      "operation": "multiply",
+      "scale": {
+        "type": "hephaestus_tools:depth"
+      }
+    }
+  ]
+}

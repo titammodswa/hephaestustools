@@ -1,9 +1,9 @@
 package com.titammods.hephaestus_tools.tools.helper;
 
+import com.titammods.hephaestus_tools.effect.ToolEffects;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.materials.MaterialManager;
 import com.titammods.hephaestus_tools.materials.MaterialStats;
-import com.titammods.hephaestus_tools.materials.trait.MaterialTrait;
 import com.titammods.hephaestus_tools.tables.layout.ToolLayouts;
 import com.titammods.hephaestus_tools.tools.item.ModifiableItem;
 import com.titammods.hephaestus_tools.tools.modifier.ModifierEffect;
@@ -23,8 +23,6 @@ import java.util.List;
 
 public final class ToolBuildHandler {
 
-    public static final float HANDLE_STAT_SHARE = 0.15f;
-    public static final float BINDING_STAT_SHARE = 0.25f;
     private static final float EXTRA_PART_WEIGHT = 0.5f;
 
     public record SupportStats(float durability, float miningSpeed, float attackDamage, float enchantability) {}
@@ -33,14 +31,10 @@ public final class ToolBuildHandler {
 
     private ToolBuildHandler() {}
 
-    public static float shareForSlot(int slot) {
-        return slot == 2 ? BINDING_STAT_SHARE : HANDLE_STAT_SHARE;
-    }
-
     public static SupportStats supportStats(MaterialId id, int slot) {
         MaterialManager mm = MaterialManager.getInstance();
         MaterialStats source = mm.getStats(id);
-        float share = shareForSlot(slot);
+        float share = mm.getStatsForSlot(id, slot == 2 ? 2 : 1).headShare();
         float durability = slot == 2
                 ? mm.getStatsForSlot(id, 2).durability()
                 : source.durability() * share;
@@ -89,6 +83,13 @@ public final class ToolBuildHandler {
         return List.of();
     }
 
+    public static int partRole(List<Item> layoutParts, int index) {
+        if (index < layoutParts.size() && layoutParts.get(index) instanceof ToolPartItem tp) {
+            return tp.getPartSlot();
+        }
+        return (index == 0) ? 0 : (index == 1) ? 1 : (index == 2) ? 2 : 1;
+    }
+
     public static ToolPropertiesData calculateProperties(ItemStack stack, ToolConstructionData construction) {
         List<MaterialId> materials = construction.materials();
 
@@ -103,14 +104,8 @@ public final class ToolBuildHandler {
         List<PartContribution> handleParts = new ArrayList<>();
         List<PartContribution> bindingParts = new ArrayList<>();
         for (int i = 0; i < materials.size(); i++) {
-            int role;
-            if (i < layoutParts.size() && layoutParts.get(i) instanceof ToolPartItem tp) {
-                role = tp.getPartSlot();
-            } else {
-                role = (i == 0) ? 0 : (i == 1) ? 1 : (i == 2) ? 2 : 1;
-            }
             MaterialId id = materials.get(i);
-            switch (role) {
+            switch (partRole(layoutParts, i)) {
                 case 0 -> headParts.add(mm.getStatsForSlot(id, 0));
                 case 2 -> bindingParts.add(new PartContribution(id, mm.getStatsForSlot(id, 2)));
                 default -> handleParts.add(new PartContribution(id, mm.getStatsForSlot(id, 1)));
@@ -189,9 +184,7 @@ public final class ToolBuildHandler {
                 finalDurability, finalMiningSpeed, finalAttackDamage,
                 finalAttackSpeed, finalEnchantability, harvestTier);
 
-        for (var trait : MaterialTrait.collect(construction.materials())) {
-            trait.applyStats(ctx);
-        }
+        ToolEffects.modifyStats(stack.getItem(), construction.materials(), ctx);
 
         List<String> activeTraits = new ArrayList<>();
         for (ToolConstructionData.ModifierEntry modEntry : construction.modifiers()) {

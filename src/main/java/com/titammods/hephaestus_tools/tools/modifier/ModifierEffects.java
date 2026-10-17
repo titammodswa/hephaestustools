@@ -1,5 +1,6 @@
 package com.titammods.hephaestus_tools.tools.modifier;
 
+import com.titammods.hephaestus_tools.materials.tier.BuiltInTiers;
 import com.titammods.hephaestus_tools.tools.stat.HarvestTier;
 import net.minecraft.resources.Identifier;
 
@@ -31,14 +32,14 @@ public final class ModifierEffects {
             stats.addDurability(500);
             stats.addAttackDamage(0.5f);
             stats.addMiningSpeed(2);
-            stats.setHarvestTier(HarvestTier.DIAMOND);
+            stats.setHarvestTier(HarvestTier.of(BuiltInTiers.DIAMOND));
         });
 
         register(EMERALD, (stats, level) -> {
             stats.multiplyDurability(0.5f);
             stats.multiplyAttackDamage(0.25f);
             stats.multiplyMiningSpeed(0.25f);
-            stats.setHarvestTier(HarvestTier.IRON);
+            stats.setHarvestTier(HarvestTier.of(BuiltInTiers.IRON));
         });
 
         register(LAPIS, (stats, level) -> {
@@ -51,7 +52,7 @@ public final class ModifierEffects {
             stats.multiplyDurability(0.2f);
             stats.multiplyAttackDamage(0.2f);
             stats.multiplyMiningSpeed(0.25f);
-            stats.setHarvestTier(HarvestTier.NETHERITE);
+            stats.setHarvestTier(HarvestTier.of(BuiltInTiers.NETHERITE));
             stats.indestructible = true;
         });
 

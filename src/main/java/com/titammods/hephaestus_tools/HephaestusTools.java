@@ -3,6 +3,7 @@ package com.titammods.hephaestus_tools;
 import com.titammods.hephaestus_tools.compat.jei.CastingRecipeSync;
 import com.titammods.hephaestus_tools.config.HephaestusConfig;
 import com.titammods.hephaestus_tools.datagen.ModDataGenerators;
+import com.titammods.hephaestus_tools.effect.EffectRegistries;
 import com.titammods.hephaestus_tools.registry.ModBlocks;
 import com.titammods.hephaestus_tools.registry.ModComponents;
 import com.titammods.hephaestus_tools.registry.ModCreativeTabs;
@@ -36,6 +37,7 @@ public class HephaestusTools {
         ModRecipes.RECIPE_BOOK_CATEGORIES.register(modBus);
         ModCreativeTabs.TABS.register(modBus);
         ModSounds.SOUNDS.register(modBus);
+        EffectRegistries.register(modBus);
 
         ModDataGenerators.register(modBus);
 

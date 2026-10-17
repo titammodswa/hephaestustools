@@ -1,9 +1,12 @@
 package com.titammods.hephaestus_tools.tools.item;
 
+import com.titammods.hephaestus_tools.api.event.ToolTraitTooltipEvent;
+import com.titammods.hephaestus_tools.effect.ToolEffects;
 import com.titammods.hephaestus_tools.materials.MaterialId;
 import com.titammods.hephaestus_tools.event.MasteryEvents;
 import com.titammods.hephaestus_tools.event.MasteryInteract;
-import com.titammods.hephaestus_tools.materials.trait.MaterialTrait;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits;
+import com.titammods.hephaestus_tools.materials.trait.ToolTraits.TraitInstance;
 import com.titammods.hephaestus_tools.registry.ModComponents;
 import com.titammods.hephaestus_tools.table.ToolXp;
 import com.titammods.hephaestus_tools.tools.helper.ToolTooltipBuilder;
@@ -44,6 +47,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.ItemAbilities;
 import net.neoforged.neoforge.common.ItemAbility;
+import net.neoforged.neoforge.common.NeoForge;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -246,6 +250,8 @@ public abstract class ModifiableItem extends Item {
 
         appendTrait(stack, tooltip);
 
+        NeoForge.EVENT_BUS.post(new ToolTraitTooltipEvent(stack, tooltip));
+
         int lvl = ToolXp.getLevel(stack);
         Component rank = Component.translatable(ToolXp.rankKey(lvl));
         if (lvl >= ToolXp.MAX_LEVEL) {
@@ -284,11 +290,7 @@ public abstract class ModifiableItem extends Item {
         super.inventoryTick(stack, level, entity, slot);
         ToolStack.refreshIfStale(stack);
         if (!(entity instanceof Player player) || !ToolStack.isInitialized(stack)) return;
-        for (MaterialTrait t : MaterialTrait.collect(ToolStack.getMaterials(stack))) {
-            if (ToolStack.isUsable(stack) || t == MaterialTrait.CULTIVATED) {
-                t.onInventoryTick(stack, level, player);
-            }
-        }
+        ToolEffects.inventoryTick(stack, level, player);
     }
 
     @Override
@@ -303,8 +305,8 @@ public abstract class ModifiableItem extends Item {
     }
 
     private static void appendTrait(ItemStack stack, Consumer<Component> tooltip) {
-        for (MaterialTrait t : MaterialTrait.collect(ToolStack.getMaterials(stack))) {
-            tooltip.accept(Component.translatable("trait.hephaestus_tools." + t.id())
+        for (TraitInstance trait : ToolTraits.collect(stack)) {
+            tooltip.accept(ToolTooltipBuilder.traitName(trait)
                     .withStyle(ChatFormatting.DARK_AQUA));
         }
     }

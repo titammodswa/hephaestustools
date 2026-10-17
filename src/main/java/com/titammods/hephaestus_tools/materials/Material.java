@@ -71,9 +71,9 @@ public record Material(
                     MaterialIngredient.CODEC.optionalFieldOf("ingredient", MaterialIngredient.EMPTY)
                             .forGetter(Material::ingredient),
                     Codec.INT.optionalFieldOf("color", 0xFFFFFF).forGetter(Material::color),
-                    MaterialStats.CODEC.optionalFieldOf("head_stats", MaterialStats.EMPTY).forGetter(Material::headStats),
-                    MaterialStats.CODEC.optionalFieldOf("handle_stats", MaterialStats.EMPTY).forGetter(Material::handleStats),
-                    MaterialStats.CODEC.optionalFieldOf("binding_stats", MaterialStats.EMPTY).forGetter(Material::bindingStats)
+                    MaterialStats.HEAD_CODEC.optionalFieldOf("head_stats", MaterialStats.EMPTY).forGetter(Material::headStats),
+                    MaterialStats.HANDLE_CODEC.optionalFieldOf("handle_stats", MaterialStats.EMPTY_HANDLE).forGetter(Material::handleStats),
+                    MaterialStats.BINDING_CODEC.optionalFieldOf("binding_stats", MaterialStats.EMPTY_BINDING).forGetter(Material::bindingStats)
             ).apply(instance, Material::new)
     );
 
@@ -96,7 +96,7 @@ public record Material(
             case 0  -> headStats;
             case 1  -> handleStats;
             case 2  -> bindingStats;
-            default -> MaterialStats.EMPTY;
+            default -> MaterialStats.emptyFor(slot);
         };
     }
 }

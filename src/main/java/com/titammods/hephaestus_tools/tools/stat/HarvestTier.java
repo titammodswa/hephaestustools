@@ -1,57 +1,44 @@
 package com.titammods.hephaestus_tools.tools.stat;
 
-import com.titammods.hephaestus_tools.HephaestusTools;
-import net.minecraft.core.registries.Registries;
+import com.titammods.hephaestus_tools.materials.tier.BuiltInTiers;
+import com.titammods.hephaestus_tools.materials.tier.TierDefinition;
+import com.titammods.hephaestus_tools.materials.tier.TierManager;
 import net.minecraft.resources.Identifier;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
-public enum HarvestTier {
+import java.util.Optional;
 
-    WOOD("wood", 0, BlockTags.INCORRECT_FOR_WOODEN_TOOL),
-    STONE("stone", 1, BlockTags.INCORRECT_FOR_STONE_TOOL),
-    IRON("iron", 2, BlockTags.INCORRECT_FOR_IRON_TOOL),
-    DIAMOND("diamond", 3, BlockTags.INCORRECT_FOR_DIAMOND_TOOL),
-    GOLD("gold", 0, BlockTags.INCORRECT_FOR_GOLD_TOOL),
-    NETHERITE("netherite", 4, BlockTags.INCORRECT_FOR_NETHERITE_TOOL),
-    ADAMANTITE("adamantite", 5, modTag("incorrect_for_adamantite_tool")),
-    AURICHALCUM("aurichalcum", 6, modTag("incorrect_for_aurichalcum_tool"));
-
-    private final String id;
-    private final int miningLevel;
-    private final TagKey<Block> incorrectForTag;
-
-    HarvestTier(String id, int miningLevel, TagKey<Block> incorrectForTag) {
-        this.id = id;
-        this.miningLevel = miningLevel;
-        this.incorrectForTag = incorrectForTag;
-    }
-
-    public String id() {
-        return id;
-    }
+public record HarvestTier(Identifier id, TierDefinition definition) {
 
     public int miningLevel() {
-        return miningLevel;
+        return definition.miningLevel();
     }
 
     public TagKey<Block> incorrectForTag() {
-        return incorrectForTag;
+        return definition.incorrectFor();
     }
 
     public boolean canHarvest(BlockState state) {
-        return !state.is(incorrectForTag);
+        return !state.is(definition.incorrectFor());
     }
 
-    private static TagKey<Block> modTag(String path) {
-        return TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(HephaestusTools.MOD_ID, path));
+    public String nameKey() {
+        return "tooltip." + id.getNamespace() + ".tier." + id.getPath();
+    }
+
+    public static HarvestTier of(Identifier id) {
+        return definitionOf(id)
+                .map(definition -> new HarvestTier(id, definition))
+                .orElseGet(() -> new HarvestTier(BuiltInTiers.WOOD, definitionOf(BuiltInTiers.WOOD).orElseThrow()));
     }
 
     public static HarvestTier byOrdinal(int ordinal) {
-        HarvestTier[] values = values();
-        if (ordinal < 0 || ordinal >= values.length) return WOOD;
-        return values[ordinal];
+        return of(BuiltInTiers.byPosition(ordinal));
+    }
+
+    private static Optional<TierDefinition> definitionOf(Identifier id) {
+        return TierManager.getInstance().get(id).or(() -> BuiltInTiers.get(id));
     }
 }

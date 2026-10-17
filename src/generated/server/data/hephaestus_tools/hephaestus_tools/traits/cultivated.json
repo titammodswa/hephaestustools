@@ -1,0 +1,9 @@
+{
+  "effects": [
+    {
+      "type": "hephaestus_tools:repair_over_time",
+      "interval": 40,
+      "while_broken": true
+    }
+  ]
+}
